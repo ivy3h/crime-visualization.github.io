@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Crime Data Visualization (2020-2024)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            color: #ffffff;
+            background: #000000;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 网格背景效果 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            padding: 80px 20px 60px;
+            color: #ffffff;
+            animation: fadeInDown 1s ease;
+            border-bottom: 2px solid #555555;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: #ff0000;
+            animation: expandLine 2s ease-in-out infinite;
+        }
+
+        @keyframes expandLine {
+            0%, 100% { width: 0; }
+            50% { width: 300px; }
+        }
+
+        h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .glitch {
+            position: relative;
+            display: inline-block;
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .date-range {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 30px;
+            border: 2px solid #ffffff;
+            margin-top: 20px;
+            color: #ffffff;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555555;
+            padding: 40px;
+            margin: 40px 0;
+            animation: fadeInUp 1s ease;
+            position: relative;
+        }
+
+        .content::before,
+        .content::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+        }
+
+        .content::before {
+            top: -2px;
+            left: -2px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .content::after {
+            bottom: -2px;
+            right: -2px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        h2 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-size: 2em;
+            border-bottom: 2px solid #555555;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .description {
+            font-size: 1.1em;
+            color: #ffffff;
+            margin-bottom: 30px;
+            line-height: 1.8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .visualizations-grid {
+		    display: grid;
+		    grid-template-columns: repeat(2, 1fr); 
+		    gap: 30px;
+		    margin-top: 30px;
+		}
+
+        .viz-card {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #555555;
+            padding: 30px;
+            color: #ffffff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viz-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .viz-card:hover::before {
+            left: 100%;
+        }
+
+        .viz-card:hover {
+            border-color: #ffffff;
+            transform: translateY(-5px);
+        }
+
+        .viz-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .viz-card:hover h3 {
+            color: #cccccc;
+        }
+
+        .viz-card p {
+            opacity: 0.9;
+            line-height: 1.6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .viz-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .feature {
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #555555;
+            border-left: 4px solid #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            border-color: #ffffff;
+            transform: translateX(5px);
+        }
+
+        .feature h3 {
+            color: #ffffff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-size: 1.1em;
+        }
+
+        .feature p {
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #ffffff;
+            border-top: 2px solid #555555;
+            margin-top: 40px;
+        }
+
+        .collapsed {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .expanded {
+            display: block;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        
+        .github-link {
+            display: inline-block;
+            background: transparent;
+            color: #ffffff;
+            padding: 12px 30px;
+            border: 2px solid #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .github-link:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .attributes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .attr-category {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #555555;
+            border-left: 4px solid #ffffff;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .attr-category:hover {
+            border-left-color: #cccccc;
+            transform: translateX(5px);
+        }
+
+        .attr-category h4 {
+            color: #ffffff;
+            font-size: 1em;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .attr-item {
+            font-size: 0.9em;
+            color: #ffffff;
+            margin-bottom: 8px;
+            line-height: 1.5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .attr-key {
+            color: #ffffff;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .map-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+
+        .fullscreen-btn {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.9);
+            color: #ffffff;
+            padding: 10px 20px;
+            border: 2px solid #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .fullscreen-btn:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0) 50%,
+                rgba(0, 0, 0, 0.1) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            animation: scanlines 8s linear infinite;
+            z-index: 999;
+        }
+
+		.viz-card img {
+		    cursor: pointer;
+		    transition: transform 0.3s ease;
+		}
+		
+		.viz-card img:hover {
+		    transform: scale(1.05);
+		}
+		
+		.image-modal {
+		    display: none;
+		    position: fixed;
+		    z-index: 1000;
+		    left: 0;
+		    top: 0;
+		    width: 100%;
+		    height: 100%;
+		    background-color: rgba(0,0,0,0.9);
+		    justify-content: center;
+		    align-items: center;
+		}
+		
+		.image-modal img {
+		    max-width: 90%;
+		    max-height: 90%;
+		    border: 3px solid #ffffff;
+		}
+		
+		.image-modal.show {
+		    display: flex;
+		    animation: fadeIn 0.3s ease;
+		}
+		
+		@keyframes fadeIn {
+		    from { opacity: 0; }
+		    to { opacity: 1; }
+		}
+		
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+            
+            .content {
+                padding: 25px;
+            }
+            
+            .visualizations-grid {
+			    display: grid;
+			    grid-template-columns: repeat(2, 1fr); /* 2 列 */
+			    gap: 20px; /* 图之间的间距 */
+			    margin-top: 20px;
+			}
+        }
+    </style>
+</head>
+<body>
+    <div class="scanline"></div>
+    
+    <div class="container">
+        <header>
+            <h1 class="glitch">US CRIME DATA</h1>
+            <p class="subtitle">— CS 6730: Data Vis Principles —</p>
+            <div class="date-range">[ JAN 2020 - SEPT 2024 ]</div>
+        </header>
+
+        <div class="content">
+            <section class="section">
+                <h2>// MISSION BRIEFING</h2>
+                <p class="description">
+Crime in the United States affects community safety, policy, and urban planning, yet existing tools focus on isolated incidents and aggregated statistics remain hard to interpret. Our project bridges this gap by visualizing crime data from 2020—2024 to reveal spatial and temporal patterns, with the goal to make complex data intuitive and actionable for researchers, policymakers, and the public.
+                </p>
+            </section>
+
+            <section class="section">
+                <h2>// DATA ATTRIBUTES</h2>
+                    <p class="description">
+                        The dataset contains 28 attributes describing each crime incident, covering core identifiers, classification, victim details, and spatial context.
+                    </p>
+                    <div class="attributes-grid">
+                        <div class="attr-category">
+                            <h4>CORE CRIME INFORMATION</h4>
+                            <div class="attr-item"><span class="attr-key">DR_NO:</span> Unique identifier for each reported crime</div>
+                            <div class="attr-item"><span class="attr-key">Date Rptd:</span> Date the crime was reported</div>
+                            <div class="attr-item"><span class="attr-key">DATE OCC:</span> Date the crime occurred</div>
+                            <div class="attr-item"><span class="attr-key">TIME OCC:</span> Time the crime occurred</div>
+                            <div class="attr-item"><span class="attr-key">AREA:</span> Geographic area or precinct</div>
+                            <div class="attr-item"><span class="attr-key">AREA NAME:</span> Descriptive name of the area</div>
+                            <div class="attr-item"><span class="attr-key">Rpt Dist No:</span> Reporting district number</div>
+                        </div>
+                        
+                        <div class="attr-category">
+                            <h4>CRIME CLASSIFICATION</h4>
+                            <div class="attr-item"><span class="attr-key">Part 1-2:</span> Severity classification (Part 1: serious, Part 2: less serious)</div>
+                            <div class="attr-item"><span class="attr-key">Crm Cd:</span> Crime code or classification number</div>
+                            <div class="attr-item"><span class="attr-key">Crm Cd Desc:</span> Description of the crime code</div>
+                            <div class="attr-item"><span class="attr-key">Mocodes:</span> Motivations or circumstances</div>
+                        </div>
+                        
+                        <div class="attr-category">
+                            <h4>VICTIM INFORMATION</h4>
+                            <div class="attr-item"><span class="attr-key">Vict Age:</span> Age of the victim</div>
+                            <div class="attr-item"><span class="attr-key">Vict Sex:</span> Sex of the victim</div>
+                            <div class="attr-item"><span class="attr-key">Vict Descent:</span> Racial or ethnic background</div>
+                        </div>
+                        
+                        <div class="attr-category">
+                            <h4>LOCATION & CONTEXT</h4>
+                            <div class="attr-item"><span class="attr-key">Premis Cd:</span> Premises code (e.g., residential, commercial)</div>
+                            <div class="attr-item"><span class="attr-key">Premis Desc:</span> Description of the premises</div>
+                            <div class="attr-item"><span class="attr-key">Weapon Used Cd:</span> Code for weapon used (if any)</div>
+                            <div class="attr-item"><span class="attr-key">Weapon Desc:</span> Description of the weapon</div>
+                        </div>
+                        
+                        <div class="attr-category">
+                            <h4>ADDITIONAL INFORMATION</h4>
+                            <div class="attr-item"><span class="attr-key">Status:</span> Current case status (e.g., open, closed)</div>
+                            <div class="attr-item"><span class="attr-key">Status Desc:</span> Description of case status</div>
+                            <div class="attr-item"><span class="attr-key">Crm Cd 1-4:</span> Additional crime codes if applicable</div>
+                            <div class="attr-item"><span class="attr-key">LOCATION:</span> General location of the crime</div>
+                            <div class="attr-item"><span class="attr-key">Cross Street:</span> Intersection or nearby street</div>
+                            <div class="attr-item"><span class="attr-key">LAT, LON:</span> GPS coordinates of crime location</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>// Geographic Analysis</h2>
+                <div class="description">
+                    <p style="margin-bottom: 20px;">Interactive heatmap showing high-risk zones across LA sectors. Use mouse to pan and zoom for detailed tactical overview.</p>
+                </div>
+                <div class="map-container">
+                    <iframe src="la_crime_map.html" 
+                            frameborder="0" 
+                            style="width: 100%; height: 600px; border: 2px solid #555555; background: #000000;">
+                    </iframe>
+                    <div class="map-overlay">
+                        <a href="la_crime_map.html" target="_blank" class="fullscreen-btn">
+                            >> OPEN FULL SCREEN <<
+                        </a>
+                    </div>
+                </div>
+
+            </section>
+
+			<section class="section">
+			    <h2>// TEMPORAL ANALYSIS</h2>
+			
+			    <div class="description">
+			        <ul>
+			            <li><strong>Hourly patterns:</strong> Peak criminal activity occurs around midday (12:00 PM), with lower crime rates between midnight and 7:00 AM, contrary to common perceptions about nighttime danger.</li>
+			            <li><strong>Weekly patterns:</strong> Fridays show the highest incidence of reported crimes.</li>
+			            <li><strong>Monthly patterns:</strong> January shows the highest crime levels.</li>
+			            <li><strong>Yearly trends:</strong> Crime incidents increased from 2020 through early 2022, peaked in 2022, then dramatically decreased beginning in 2024.</li>
+			        </ul>
+			    </div>
+			
+			    <div class="visualizations-grid">
+			        <div class="viz-card">
+			            <h3>Hourly Crime Patterns</h3>
+			            <img src="./images/hourly.jpg" alt="Hourly crime chart" style="width:100%; height:auto;">
+			        </div>
+			        <div class="viz-card">
+			            <h3>Weekly Crime Patterns</h3>
+			            <img src="./images/weekly.jpg" alt="Weekly crime chart" style="width:100%; height:auto;">
+			        </div>
+			        <div class="viz-card">
+			            <h3>Monthly Crime Patterns</h3>
+			            <img src="./images/monthly.jpg" alt="Monthly crime chart" style="width:100%; height:auto;">
+			        </div>
+			        <div class="viz-card">
+			            <h3>Yearly Crime Trends</h3>
+			            <img src="./images/yearly.jpg" alt="Yearly crime chart" style="width:100%; height:auto;">
+			        </div>
+			    </div>
+			</section>
+
+			<section class="section">
+			    <h2>// CATEGORICAL ANALYSIS</h2>
+			
+			    <div class="description">
+			        <ul>
+			            <li><strong>Crime types:</strong> "VEHICLE - STOLEN" emerges as the most frequent offense.</li>
+			            <li><strong>Weapons used:</strong> "STRONG-ARM (HANDS, FIST, FEET OR BODILY FORCE)" is the most common weapon category.</li>
+			            <li><strong>Crime severity:</strong> Serious (Part 1) crimes constitute 59.6% of all incidents.</li>
+			            <li><strong>Victim demographics:</strong> Males comprise 47.0% of victims.</li>
+			        </ul>
+			    </div>
+			
+			    <div class="visualizations-grid">
+			        <div class="viz-card">
+			            <h3>Crime Types</h3>
+			            <img src="./images/crimetype.jpg" alt="Crime type chart" style="width:100%; height:auto;">
+			        </div>
+			        <div class="viz-card">
+			            <h3>Weapon Categories</h3>
+			            <img src="./images/weapon.jpg" alt="Weapon chart" style="width:100%; height:auto;">
+			        </div>
+			        <div class="viz-card">
+			            <h3>Crime Severity</h3>
+			            <img src="./images/severity.jpg" alt="Crime severity chart" style="width:100%; height:auto;">
+			        </div>
+			        <div class="viz-card">
+			            <h3>Victim Demographics</h3>
+			            <img src="./images/victims.jpg" alt="Victim demographics chart" style="width:100%; height:auto;">
+			        </div>
+			    </div>
+			</section>
+			
+			
+            <section class="section">
+                <h2>// DATA SOURCES</h2>
+                <p class="description">
+                U.S. Crime Dataset (January 2020 — September 2024). Source: <a href="https://www.kaggle.com/datasets/arpitsinghaiml/u-s-crime-dataset" target="_blank" style="color: #ffffff; text-decoration: underline;">Kaggle</a>
+                </p>
+            </section>
+        </div>
+
+        <footer>
+            <p style="font-size: 1.2em; letter-spacing: 2px;">[ DATA VISUALIZATION TACTICAL UNIT ]</p>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #ffffff;">OPERATIONAL TIMELINE: JAN 2020 — SEPT 2024</p>
+            <a href="https://github.com/yourusername/yourrepo" class="github-link" target="_blank">
+                >> ACCESS REPOSITORY <<
+            </a>
+        </footer>
+    </div>
+
+<footer style="text-align:center; margin-top:50px; padding:20px; color:#555; font-size:14px;">
+    <p><strong>Team Name:</strong> SMOOTH CRIMINAL</p>
+    <p><strong>Team Members:</strong> Chunzhen Hu, Ivy He, Yuxing Sun, Yangsheng Zhou, Muzhi Liu, Bei Liu</p>
+    <p style="margin-top:10px;">Georgia Institute of Technology · 2025</p>
+</footer>
+
+<div id="imageModal" class="image-modal" onclick="closeModal()">
+    <img id="modalImage" src="">
+</div>
+
+<script>
+const modal = document.getElementById("imageModal");
+const modalImg = document.getElementById("modalImage");
+
+document.querySelectorAll(".viz-card img").forEach(img => {
+    img.addEventListener("click", () => {
+        modalImg.src = img.src;
+        modal.classList.add("show");
+    });
+});
+
+function closeModal() {
+    modal.classList.remove("show");
+}
+
+function toggleAttributes() {
+    const section = document.getElementById("attributes");
+    const title = document.getElementById("attr-title");
+
+    if (section.classList.contains("collapsed")) {
+        section.classList.remove("collapsed");
+        section.classList.add("expanded");
+        title.innerHTML = "// DATA ATTRIBUTES ▲";
+    } else {
+        section.classList.remove("expanded");
+        section.classList.add("collapsed");
+        title.innerHTML = "// DATA ATTRIBUTES ▼";
+    }
+}
+
+function toggleTemporal() {
+    const section = document.getElementById("temporal-content");
+    const title = document.getElementById("temporal-title");
+
+    if (section.classList.contains("collapsed")) {
+        section.classList.remove("collapsed");
+        section.classList.add("expanded");
+        title.innerHTML = "// TEMPORAL & CATEGORICAL ANALYSIS ▲";
+    } else {
+        section.classList.remove("expanded");
+        section.classList.add("collapsed");
+        title.innerHTML = "// TEMPORAL & CATEGORICAL ANALYSIS ▼";
+    }
+}
+</script>
+
+
+</body>
+</html>
