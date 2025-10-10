@@ -475,19 +475,80 @@
         <header>
             <h1 class="glitch">US CRIME DATA</h1>
             <p class="subtitle">— CS 6730: Data Vis Principles —</p>
-            <div class="date-range">[ JAN 2020 - SEPT 2024 ]</div>
+            <div class="date-range">[Team: SMOOTH CRIMINAL]</div>
         </header>
 
+<div class="content" style="margin-top: 20px;">
+	    <section class="section">
+	        <h2>GLOBAL CONTROLS</h2>
+	        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: end; margin-bottom: 15px;">
+	            <!-- Date Range -->
+	            <div>
+	                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">📅 DATE RANGE</h4>
+	                <div style="display: flex; align-items: center; gap: 8px;">
+	                    <input type="month" id="startDate" value="2020-01" min="2020-01" max="2024-09" 
+	                           style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; font-size: 0.9em; flex: 1;">
+	                    <span style="color: #ffffff; font-size: 0.9em;">to</span>
+	                    <input type="month" id="endDate" value="2024-09" min="2020-01" max="2024-09"
+	                           style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; font-size: 0.9em; flex: 1;">
+	                </div>
+	            </div>
+	            
+	            <!-- Crime Type -->
+	            <div>
+	                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">🔍 CRIME TYPE</h4>
+					<select id="crimeTypeFilter" style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; width: 100%; font-size: 0.9em;">
+					    <option value="all">All Crime Types</option>
+					    <option value="vehicle-stolen">Vehicle - Stolen</option>
+					    <option value="battery-simple-assault">Battery - Simple Assault</option>
+					    <option value="burglary-from-vehicle">Burglary from Vehicle</option>
+					    <option value="theft-of-identity">Theft of Identity</option>
+					    <option value="vandalism-felony">Vandalism - Felony</option>
+					    <option value="burglary">Burglary</option>
+					    <option value="assault-deadly-weapon">Assault with Deadly Weapon</option>
+					    <option value="theft-petty">Theft Plain - Petty</option>
+					    <option value="intimate-partner-assault">Intimate Partner Assault</option>
+					    <option value="theft-from-motor-vehicle">Theft from Motor Vehicle</option>
+					</select>
+	            </div>
+	            
+	            <!-- Demographics -->
+	            <div>
+	                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">👥 VICTIM SEX</h4>
+	                <div style="display: flex; gap: 15px;">
+	                    <label style="color: #ffffff; font-size: 0.9em; cursor: pointer;">
+	                        <input type="checkbox" id="filterMale" checked> Male
+	                    </label>
+	                    <label style="color: #ffffff; font-size: 0.9em; cursor: pointer;">
+	                        <input type="checkbox" id="filterFemale" checked> Female
+	                    </label>
+	                    <label style="color: #ffffff; font-size: 0.9em; cursor: pointer;">
+	                        <input type="checkbox" id="filterOther" checked> Other
+	                    </label>
+	                </div>
+	            </div>
+	        </div>
+	        
+	        <div style="display: flex; gap: 10px;">
+	            <button id="applyFilters" style="padding: 8px 20px; background: transparent; color: #ffffff; border: 2px solid #ffffff; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; font-size: 0.9em;">
+	                >> APPLY
+	            </button>
+	            <button id="resetFilters" style="padding: 8px 20px; background: transparent; color: #ffffff; border: 2px solid #555555; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9em;">
+	                RESET
+	            </button>
+	        </div>
+	    </section>
+	</div>
         <div class="content">
             <section class="section">
-                <h2>// MISSION BRIEFING</h2>
+                <h2>MISSION BRIEFING</h2>
                 <p class="description">
 Crime in the United States affects community safety, policy, and urban planning, yet existing tools focus on isolated incidents and aggregated statistics remain hard to interpret. Our project bridges this gap by visualizing crime data from 2020—2024 to reveal spatial and temporal patterns, with the goal to make complex data intuitive and actionable for researchers, policymakers, and the public.
                 </p>
             </section>
 
             <section class="section">
-                <h2>// DATA ATTRIBUTES</h2>
+                <h2>DATA ATTRIBUTES</h2>
                     <p class="description">
                         The dataset contains 28 attributes describing each crime incident, covering core identifiers, classification, victim details, and spatial context.
                     </p>
@@ -540,7 +601,7 @@ Crime in the United States affects community safety, policy, and urban planning,
             </section>
 
             <section class="section">
-                <h2>// Geographic Analysis</h2>
+                <h2>Where: Geographic Analysis</h2>
                 <div class="description">
                     <p style="margin-bottom: 20px;">Interactive heatmap showing high-risk zones across LA sectors. Use mouse to pan and zoom for detailed tactical overview.</p>
                 </div>
@@ -559,7 +620,7 @@ Crime in the United States affects community safety, policy, and urban planning,
             </section>
 
 			<section class="section">
-			    <h2>// TEMPORAL ANALYSIS</h2>
+			    <h2>When: TEMPORAL ANALYSIS</h2>
 			
 			    <div class="description">
 			        <ul>
@@ -591,14 +652,13 @@ Crime in the United States affects community safety, policy, and urban planning,
 			</section>
 
 			<section class="section">
-			    <h2>// CATEGORICAL ANALYSIS</h2>
+			    <h2>WHAT: CATEGORICAL ANALYSIS</h2>
 			
 			    <div class="description">
 			        <ul>
 			            <li><strong>Crime types:</strong> "VEHICLE - STOLEN" emerges as the most frequent offense.</li>
 			            <li><strong>Weapons used:</strong> "STRONG-ARM (HANDS, FIST, FEET OR BODILY FORCE)" is the most common weapon category.</li>
 			            <li><strong>Crime severity:</strong> Serious (Part 1) crimes constitute 59.6% of all incidents.</li>
-			            <li><strong>Victim demographics:</strong> Males comprise 47.0% of victims.</li>
 			        </ul>
 			    </div>
 			
@@ -615,16 +675,45 @@ Crime in the United States affects community safety, policy, and urban planning,
 			            <h3>Crime Severity</h3>
 			            <img src="./images/severity.jpg" alt="Crime severity chart" style="width:100%; height:auto;">
 			        </div>
-			        <div class="viz-card">
-			            <h3>Victim Demographics</h3>
-			            <img src="./images/victims.jpg" alt="Victim demographics chart" style="width:100%; height:auto;">
-			        </div>
 			    </div>
-			</section>
-			
-			
+				</section>
+				
+			<section class="section">
+				    <h2>WHO: DEMOGRAPHICS ANALYSIS</h2>
+				    
+				    <div class="description">
+				        <ul>
+							<li><strong>Victim gender distribution:</strong> Males comprise 47.0% of victims.</li>            
+							<li><strong>Age distribution patterns:</strong> Victims are generally young adults, with a median age of 30 and a mean age of 29.1. Ages range up to 99, and the wide interquartile range (44.0) indicates large variability in victim age.</li>
+							<li><strong>Population pyramid:</strong> todo.</li>
+				            <li><strong>Demographic mix by crime type:</strong> todo.</li>
+				        </ul>
+				    </div>
+				    
+				    <div class="visualizations-grid">
+						<div class="viz-card">
+					            <h3>Victim gender distribution</h3>
+					            <img src="./images/victims.jpg" alt="Victim demographics chart" style="width:100%; height:auto;">
+						</div>
+						<div class="viz-card">
+				            <h3>Age distribution patterns</h3>
+				            <img src="./images/age_distribution.jpg" alt="Age distribution chart" style="width:100%; height:auto;">
+				        </div>
+						<!--
+				        <div class="viz-card">
+				            <h3>Population pyramid</h3>
+				            <img src="./images/population_pyramid.jpg" alt="Population pyramid chart" style="width:100%; height:auto;">
+				        </div>
+				        <div class="viz-card">
+				            <h3>Demographic mix by crime type</h3>
+				            <img src="./images/demographic_mix.jpg" alt="Demographic mix chart" style="width:100%; height:auto;">
+				        </div>
+						-->
+				    </div>
+				
+				</section>			
             <section class="section">
-                <h2>// DATA SOURCES</h2>
+                <h2>DATA SOURCES</h2>
                 <p class="description">
                 U.S. Crime Dataset (January 2020 — September 2024). Source: <a href="https://www.kaggle.com/datasets/arpitsinghaiml/u-s-crime-dataset" target="_blank" style="color: #ffffff; text-decoration: underline;">Kaggle</a>
                 </p>
@@ -672,11 +761,11 @@ function toggleAttributes() {
     if (section.classList.contains("collapsed")) {
         section.classList.remove("collapsed");
         section.classList.add("expanded");
-        title.innerHTML = "// DATA ATTRIBUTES ▲";
+        title.innerHTML = "DATA ATTRIBUTES ▲";
     } else {
         section.classList.remove("expanded");
         section.classList.add("collapsed");
-        title.innerHTML = "// DATA ATTRIBUTES ▼";
+        title.innerHTML = "DATA ATTRIBUTES ▼";
     }
 }
 
@@ -687,13 +776,32 @@ function toggleTemporal() {
     if (section.classList.contains("collapsed")) {
         section.classList.remove("collapsed");
         section.classList.add("expanded");
-        title.innerHTML = "// TEMPORAL & CATEGORICAL ANALYSIS ▲";
+        title.innerHTML = "TEMPORAL & CATEGORICAL ANALYSIS ▲";
     } else {
         section.classList.remove("expanded");
         section.classList.add("collapsed");
-        title.innerHTML = "// TEMPORAL & CATEGORICAL ANALYSIS ▼";
+        title.innerHTML = "TEMPORAL & CATEGORICAL ANALYSIS ▼";
     }
 }
+
+document.getElementById('applyFilters')?.addEventListener('click', () => {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const crimeType = document.getElementById('crimeTypeFilter').value;
+    
+    console.log('Filters applied:', { startDate, endDate, crimeType });
+    alert('Filters applied! (Full interactivity will be implemented in next phase)');
+ 
+});
+
+document.getElementById('resetFilters')?.addEventListener('click', () => {
+    document.getElementById('startDate').value = '2020-01';
+    document.getElementById('endDate').value = '2024-09';
+    document.getElementById('crimeTypeFilter').value = 'all';
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    
+    alert('Filters reset!');
+});
 </script>
 
 
