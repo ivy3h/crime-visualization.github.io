@@ -21,7 +21,7 @@
             overflow-x: hidden;
         }
 
-        /* 网格背景效果 */
+        /* Grid background effect */
         body::before {
             content: '';
             position: fixed;
@@ -199,6 +199,49 @@
             transform: translateY(-5px);
         }
 
+        .viz-hint {
+            font-size: 0.8em;
+            color: #cccccc;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .what-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .what-help-button {
+            padding: 6px 14px;
+            border: 1px solid #888;
+            background: transparent;
+            color: #fff;
+            font-size: 0.8em;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .what-help-button[aria-expanded="true"] {
+            border-color: #fff;
+        }
+
+        .what-help-panel {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 16px;
+            border: 1px solid #555;
+            background: rgba(255, 255, 255, 0.05);
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .what-help-panel ul {
+            padding-left: 20px;
+        }
+
         .viz-card h3 {
             font-size: 1.5em;
             margin-bottom: 15px;
@@ -215,6 +258,56 @@
             opacity: 0.9;
             line-height: 1.6;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .viz-note {
+            font-size: 0.85em;
+            color: #cccccc;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .viz-select {
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            border: 1px solid #555555;
+            padding: 4px 8px;
+            font-size: 0.85em;
+            margin-left: 6px;
+        }
+
+        .what-grid-wrapper {
+            position: relative;
+        }
+
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 14px;
+            border: 1px solid #ffffff;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            font-size: 0.85em;
+            margin-bottom: 18px;
+        }
+
+        .filter-chip button {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1em;
+            line-height: 1;
+        }
+
+        .chart {
+            width: 92%;
+            min-height: 420px;
+            height: 100%;
+            margin: 0 auto;
         }
 
         .viz-icon {
@@ -461,12 +554,13 @@
             
             .visualizations-grid {
 			    display: grid;
-			    grid-template-columns: repeat(2, 1fr); /* 2 列 */
-			    gap: 20px; /* 图之间的间距 */
+			    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+			    gap: 20px; /* spacing between charts */
 			    margin-top: 20px;
 			}
         }
     </style>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 </head>
 <body>
     <div class="scanline"></div>
@@ -486,17 +580,17 @@
 	            <div>
 	                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">📅 DATE RANGE</h4>
 	                <div style="display: flex; align-items: center; gap: 8px;">
-	                    <input type="month" id="startDate" value="2020-01" min="2020-01" max="2024-09" 
-	                           style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; font-size: 0.9em; flex: 1;">
+                    <input type="month" id="startDate" value="2022-10" min="2020-01" max="2024-09" 
+                           style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; font-size: 0.9em; flex: 1;">
 	                    <span style="color: #ffffff; font-size: 0.9em;">to</span>
 	                    <input type="month" id="endDate" value="2024-09" min="2020-01" max="2024-09"
 	                           style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; font-size: 0.9em; flex: 1;">
 	                </div>
 	            </div>
 	            
-	            <!-- Crime Type -->
-	            <div>
-	                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">🔍 CRIME TYPE</h4>
+            <!-- Crime Type -->
+            <div>
+                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">🔍 CRIME TYPE</h4>
 					<select id="crimeTypeFilter" style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; width: 100%; font-size: 0.9em;">
 					    <option value="all">All Crime Types</option>
 					    <option value="vehicle-stolen">Vehicle - Stolen</option>
@@ -510,7 +604,7 @@
 					    <option value="intimate-partner-assault">Intimate Partner Assault</option>
 					    <option value="theft-from-motor-vehicle">Theft from Motor Vehicle</option>
 					</select>
-	            </div>
+            </div>
 	            
 	            <!-- Demographics -->
 	            <div>
@@ -645,31 +739,74 @@ Crime in the United States affects community safety, policy, and urban planning,
                 </div>
 		    <section class="section">	    
 
-			<section class="section">
-			    <h2>WHAT: CATEGORICAL ANALYSIS</h2>
+            <section class="section">
+                <div class="what-header">
+			        <h2>WHAT: CATEGORICAL ANALYSIS</h2>
+                    <button id="whatHelpToggle" class="what-help-button" aria-expanded="false" aria-controls="whatHelpPanel">
+                        HOW TO INTERACT
+                    </button>
+                </div>
+                <div id="whatHelpPanel" class="what-help-panel" role="status" aria-live="polite">
+                    <ul>
+                        <li>Click bars to filter across the section; double-click the plot background to reset.</li>
+                        <li>Use the sort menus to reorder heatmap axes or status nodes for easier comparisons.</li>
+                        <li>Hover any mark to read precise counts, rankings, and shares before discussing insights.</li>
+                    </ul>
+                </div>
 			
 			    <div class="description">
 			        <ul>
-			            <li><strong>Crime types:</strong> "VEHICLE - STOLEN" emerges as the most frequent offense.</li>
-			            <li><strong>Weapons used:</strong> "STRONG-ARM (HANDS, FIST, FEET OR BODILY FORCE)" is the most common weapon category.</li>
-			            <li><strong>Crime severity:</strong> Serious (Part 1) crimes constitute 59.6% of all incidents.</li>
+			            <li><strong>Crime types:</strong> Hover the Pareto bars to see how quickly the top incidents accumulate.</li>
+			            <li><strong>Hierarchies:</strong> Use the sunburst to drill from Part 1/Part 2 down to the leading offense descriptions.</li>
+			            <li><strong>Weapons & scenes:</strong> The heatmap highlights common weapon–premises pairings.</li>
+			            <li><strong>Case pipeline:</strong> The Sankey lays out how major offense types flow into status outcomes.</li>
 			        </ul>
 			    </div>
+                <div id="what-filter-chip" class="filter-chip" style="display:none;" aria-live="polite">
+                    <span id="what-filter-chip-text"></span>
+                    <button type="button" id="clearWhatFilter" aria-label="Clear linked filter">×</button>
+                </div>
 			
-			    <div class="visualizations-grid">
-			        <div class="viz-card">
-			            <h3>Crime Types</h3>
-			            <img src="./images/crimetype.jpg" alt="Crime type chart" style="width:100%; height:auto;">
+                <div class="what-grid-wrapper">
+			        <div class="visualizations-grid">
+			            <div class="viz-card">
+			                <h3>Crime Types Pareto</h3>
+			                <div id="crime-type-chart" class="chart" data-what-chart aria-label="Top crime types Pareto chart"></div>
+                            <p class="viz-hint">Click any bar to spotlight that crime across all charts; double-click the plot background or use the filter chip to clear.</p>
+			            </div>
+			            <div class="viz-card">
+			                <h3>Severity to Offense Drilldown</h3>
+			                <div id="crime-hierarchy-chart" class="chart" data-what-chart aria-label="Crime hierarchy sunburst"></div>
+                            <p class="viz-hint">Hover to see each Part → Crime share; selections from the Pareto view automatically emphasize the chosen crime here.</p>
+			            </div>
+			            <div class="viz-card">
+			                <h3>Weapons × Premises</h3>
+			                <div style="display:flex; justify-content:flex-end; gap:10px; align-items:center; margin-bottom:12px;">
+                                <label style="font-size:0.8em;">Sort
+                                    <select id="weaponSort" class="viz-select">
+                                        <option value="default">Default</option>
+                                        <option value="desc">By total</option>
+                                    </select>
+                                </label>
+                            </div>
+			                <div id="weapon-premise-chart" class="chart" data-what-chart aria-label="Weapon versus premises heatmap"></div>
+                            <p class="viz-hint">Use the Sort control to reorder rows/columns by current totals and hover cells to inspect specific weapon–premise volumes.</p>
+			            </div>
+			            <div class="viz-card">
+			                <h3>Status Pipeline</h3>
+                        <div style="display:flex; justify-content:flex-end; gap:10px; align-items:center; margin-bottom:12px;">
+                                <label style="font-size:0.8em;">Status order
+                                    <select id="statusSort" class="viz-select">
+                                        <option value="default">Default</option>
+                                        <option value="desc">By total</option>
+                                    </select>
+                                </label>
+                            </div>
+			                <div id="status-sankey-chart" class="chart" data-what-chart aria-label="Crime status Sankey diagram"></div>
+                            <p class="viz-hint">Switch Status order to change node sorting; when a Pareto bar is selected this view filters to that crime’s outcome flow.</p>
+			            </div>
 			        </div>
-			        <div class="viz-card">
-			            <h3>Weapon Categories</h3>
-			            <img src="./images/weapon.jpg" alt="Weapon chart" style="width:100%; height:auto;">
-			        </div>
-			        <div class="viz-card">
-			            <h3>Crime Severity</h3>
-			            <img src="./images/severity.jpg" alt="Crime severity chart" style="width:100%; height:auto;">
-			        </div>
-			    </div>
+                </div>
 				</section>
 				
 			<section class="section">
@@ -778,23 +915,717 @@ function toggleTemporal() {
     }
 }
 
+const WHAT_CHART_SELECTOR = "[data-what-chart]";
+const DEFAULT_START_MONTH = "2022-10";
+const DEFAULT_END_MONTH = "2024-09";
+
+const plotlyBaseLayout = {
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
+    font: {
+        color: "#ffffff",
+        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    }
+};
+
+const plotlyConfig = {
+    responsive: true,
+    displaylogo: false,
+    displayModeBar: false,
+    staticPlot: false,
+    scrollZoom: false
+};
+
+const titleCase = (label = "") =>
+    label
+        .toLowerCase()
+        .replace(/\b([a-z])/g, (match) => match.toUpperCase());
+
+const cleanLabel = (label = "") =>
+    titleCase(label)
+        .replace(/\s{2,}/g, " ")
+        .trim();
+
+const hexToRGBA = (hex, alpha = 1) => {
+    const sanitized = hex.replace("#", "");
+    const bigint = parseInt(sanitized, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const monthWithin = (month, start, end) =>
+    (!start || month >= start) && (!end || month <= end);
+
+const matchesCrimeFilter = (crime, filters) => {
+    if (filters.selectedCrime) {
+        return crime === filters.selectedCrime;
+    }
+    if (filters.crimeType && filters.crimeType !== "all") {
+        return crime === filters.crimeType;
+    }
+    return true;
+};
+
+const filterSlices = (slices, filters) => {
+    if (!slices?.length) {
+        return [];
+    }
+    return slices.filter(
+        (slice) =>
+            monthWithin(slice.month, filters.start, filters.end) &&
+            filters.sexes.has(slice.sex) &&
+            matchesCrimeFilter(slice.crime, filters)
+    );
+};
+
+const whatState = {
+    data: null,
+    filters: {
+        start: document.getElementById("startDate")?.value || DEFAULT_START_MONTH,
+        end: document.getElementById("endDate")?.value || DEFAULT_END_MONTH,
+        sexes: new Set(["M", "F", "O"]),
+        crimeType: "all",
+        selectedCrime: null,
+        weaponSort: document.getElementById("weaponSort")?.value || "default",
+        statusSort: document.getElementById("statusSort")?.value || "default"
+    }
+};
+
+function getSelectedSexSet() {
+    const set = new Set();
+    if (document.getElementById("filterMale")?.checked) set.add("M");
+    if (document.getElementById("filterFemale")?.checked) set.add("F");
+    if (document.getElementById("filterOther")?.checked) set.add("O");
+    return set;
+}
+
+async function initWhatVisuals() {
+    const placeholders = document.querySelectorAll(WHAT_CHART_SELECTOR);
+    if (!placeholders.length || typeof Plotly === "undefined") {
+        return;
+    }
+
+    placeholders.forEach((el) => {
+        el.innerHTML = "";
+    });
+
+    try {
+        const response = await fetch("./data/what_insights.json");
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        whatState.data = data;
+        populateCrimeTypeOptions(data);
+        updateFiltersFromControls({ clearSelection: true, skipRender: true });
+        updateWhatFilterChip();
+        updateWhatCharts();
+    } catch (error) {
+        console.error("Failed to load categorical data", error);
+        placeholders.forEach((el) => {
+            el.innerHTML =
+                '<p class="viz-note">⚠ Unable to load categorical data.</p>';
+        });
+    }
+}
+
+function populateCrimeTypeOptions(data) {
+    const select = document.getElementById("crimeTypeFilter");
+    if (!select) return;
+    const existingOptions = [...select.querySelectorAll("option")];
+    existingOptions
+        .filter((option) => option.value && option.value !== "all")
+        .forEach((option) => option.remove());
+
+    const frag = document.createDocumentFragment();
+    (data?.crime_types?.totals ?? []).forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.crime;
+        option.textContent = cleanLabel(item.crime);
+        frag.appendChild(option);
+    });
+    select.appendChild(frag);
+}
+
+function updateFiltersFromControls({ clearSelection = false, skipRender = false } = {}) {
+    whatState.filters.start =
+        document.getElementById("startDate")?.value || whatState.filters.start;
+    whatState.filters.end =
+        document.getElementById("endDate")?.value || whatState.filters.end;
+    whatState.filters.sexes = getSelectedSexSet();
+    if (clearSelection) {
+        whatState.filters.selectedCrime = null;
+    }
+    whatState.filters.weaponSort =
+        document.getElementById("weaponSort")?.value || "default";
+    whatState.filters.statusSort =
+        document.getElementById("statusSort")?.value || "default";
+    if (!skipRender) {
+        updateWhatFilterChip();
+        updateWhatCharts();
+    }
+}
+
+function updateWhatFilterChip() {
+    const chip = document.getElementById("what-filter-chip");
+    const text = document.getElementById("what-filter-chip-text");
+    if (!chip || !text) return;
+    const activeCrime = whatState.filters.selectedCrime;
+    if (activeCrime) {
+        chip.style.display = "inline-flex";
+        text.textContent = `Crime filter: ${cleanLabel(activeCrime)}`;
+    } else {
+        chip.style.display = "none";
+        text.textContent = "";
+    }
+}
+
+function renderEmptyState(targetId, message) {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    if (window.Plotly && el.data) {
+        Plotly.purge(el);
+    }
+    el.innerHTML = `<p class="viz-note">${message}</p>`;
+}
+
+function updateWhatCharts() {
+    if (!whatState.data) return;
+    const tasks = [
+        renderCrimeParetoFiltered,
+        renderCrimeSunburstFiltered,
+        renderWeaponPremiseFiltered,
+        renderStatusSankeyFiltered
+    ];
+    let taskIndex = 0;
+
+    const runNext = () => {
+        if (taskIndex >= tasks.length) {
+            return;
+        }
+        const task = tasks[taskIndex++];
+        requestAnimationFrame(() => {
+            try {
+                task();
+            } finally {
+                runNext();
+            }
+        });
+    };
+
+    runNext();
+}
+
+function renderCrimeParetoFiltered() {
+    const filtersForPareto = {
+        ...whatState.filters,
+        // Keep the selection visual highlight only; don't filter the Pareto bars down
+        selectedCrime: null
+    };
+    const filtered = filterSlices(
+        whatState.data?.crime_types?.slices,
+        filtersForPareto
+    );
+    if (!filtered.length) {
+        renderEmptyState("crime-type-chart", "No incidents for current filters.");
+        return;
+    }
+
+    const totalsMap = new Map();
+    filtered.forEach((slice) => {
+        totalsMap.set(slice.crime, (totalsMap.get(slice.crime) || 0) + slice.count);
+    });
+
+    const totals = Array.from(totalsMap.entries())
+        .map(([crime, count]) => ({ crime, count }))
+        .sort((a, b) => b.count - a.count);
+
+    const totalIncidents = totals.reduce((sum, item) => sum + item.count, 0);
+    const labels = totals.map((item) => cleanLabel(item.crime));
+    const counts = totals.map((item) => item.count);
+    const shares = totals.map((item) =>
+        totalIncidents ? Number(((item.count / totalIncidents) * 100).toFixed(2)) : 0
+    );
+    const cumulative = [];
+    counts.reduce((running, value, idx) => {
+        const next = running + value;
+        cumulative[idx] = Number(((next / totalIncidents) * 100).toFixed(2));
+        return next;
+    }, 0);
+
+    const highlightCrime =
+        whatState.filters.selectedCrime ||
+        (whatState.filters.crimeType !== "all" ? whatState.filters.crimeType : null);
+
+    const barColors = totals.map((item) =>
+        item.crime === highlightCrime ? "#ffd166" : "#ff5555"
+    );
+    const customdata = totals.map((item, idx) => [
+        item.crime,
+        idx + 1,
+        shares[idx]
+    ]);
+
+    const traces = [
+        {
+            type: "bar",
+            x: labels,
+            y: counts,
+            marker: { color: barColors },
+            name: "Incidents",
+            customdata,
+            hovertemplate:
+                "<b>%{customdata[0]}</b><br>Rank #%{customdata[1]}<br>%{y:,} incidents<br>Share %{customdata[2]}%<extra></extra>",
+            offsetgroup: "counts"
+        },
+        {
+            type: "scatter",
+            mode: "lines+markers",
+            x: labels,
+            y: cumulative,
+            yaxis: "y2",
+            name: "Cumulative %",
+            marker: { color: "#00c2ff" },
+            line: { color: "#00c2ff", width: 2 },
+            hovertemplate:
+                "<b>%{x}</b><br>Cumulative %{y:.1f}%<extra></extra>",
+            offsetgroup: "line"
+        }
+    ];
+
+    const layout = {
+        ...plotlyBaseLayout,
+        margin: { t: 30, b: 200, l: 70, r: 60 },
+        xaxis: {
+            tickangle: -45,
+            tickfont: { size: 11 },
+            automargin: true,
+            tickmode: "array",
+            tickvals: labels.map((_, idx) => idx),
+            ticktext: labels.map((label) =>
+                label.length > 26 ? `${label.slice(0, 26)}…` : label
+            )
+        },
+        yaxis: {
+            title: { text: "Incidents", standoff: 25 },
+            separatethousands: true,
+            zeroline: false
+        },
+        yaxis2: {
+            title: { text: "Cumulative %", standoff: 35 },
+            overlaying: "y",
+            side: "right",
+            range: [0, 100],
+            zeroline: false,
+            showgrid: false
+        },
+        legend: {
+            orientation: "h",
+            y: 1.06,
+            x: 0.5,
+            xanchor: "center",
+            font: { size: 11 }
+        },
+        height: 480
+    };
+
+    Plotly.react("crime-type-chart", traces, layout, plotlyConfig).then(() =>
+        attachParetoInteractions()
+    );
+}
+
+function attachParetoInteractions() {
+    const chartEl = document.getElementById("crime-type-chart");
+    if (!chartEl || typeof chartEl.on !== "function") return;
+    if (chartEl.__whatClickHandler) {
+        chartEl.removeListener?.("plotly_click", chartEl.__whatClickHandler);
+    }
+    if (chartEl.__whatDoubleHandler) {
+        chartEl.removeListener?.("plotly_doubleclick", chartEl.__whatDoubleHandler);
+    }
+
+    chartEl.__whatClickHandler = (event) => {
+        const crime = event?.points?.[0]?.customdata?.[0];
+        if (!crime) return;
+        const alreadySelected = whatState.filters.selectedCrime === crime;
+        whatState.filters.selectedCrime = alreadySelected ? null : crime;
+        updateWhatFilterChip();
+        updateWhatCharts();
+    };
+
+    chartEl.__whatDoubleHandler = () => {
+        if (!whatState.filters.selectedCrime) return false;
+        whatState.filters.selectedCrime = null;
+        updateWhatFilterChip();
+        updateWhatCharts();
+        return false;
+    };
+
+    chartEl.on("plotly_click", chartEl.__whatClickHandler);
+    chartEl.on("plotly_doubleclick", chartEl.__whatDoubleHandler);
+}
+
+function renderCrimeSunburstFiltered() {
+    const slices = filterSlices(whatState.data?.sunburst, whatState.filters);
+    if (!slices.length) {
+        renderEmptyState("crime-hierarchy-chart", "No hierarchy for current filters.");
+        return;
+    }
+
+    const partTotals = new Map();
+    const leafTotals = new Map();
+    let total = 0;
+
+    slices.forEach((slice) => {
+        const key = `${slice.part}|${slice.crime}`;
+        leafTotals.set(key, (leafTotals.get(key) || 0) + slice.count);
+        partTotals.set(slice.part, (partTotals.get(slice.part) || 0) + slice.count);
+        total += slice.count;
+    });
+
+    const labels = [];
+    const parents = [];
+    const values = [];
+    const customdata = [];
+
+    for (const [part, value] of partTotals.entries()) {
+        labels.push(part);
+        parents.push("");
+        values.push(value);
+        customdata.push(total ? Number(((value / total) * 100).toFixed(2)) : 0);
+    }
+
+    for (const [key, value] of leafTotals.entries()) {
+        const [part, crime] = key.split("|");
+        labels.push(cleanLabel(crime));
+        parents.push(part);
+        values.push(value);
+        customdata.push(total ? Number(((value / total) * 100).toFixed(2)) : 0);
+    }
+
+    const trace = [
+        {
+            type: "sunburst",
+            labels,
+            parents,
+            values,
+            branchvalues: "total",
+            maxdepth: 3,
+            sort: false,
+            hovertemplate:
+                "<b>%{label}</b><br>%{value:,} incidents<br>Share %{customdata:.2f}%<extra></extra>",
+            marker: { line: { color: "#111", width: 1 } },
+            customdata
+        }
+    ];
+
+    const layout = {
+        ...plotlyBaseLayout,
+        margin: { t: 40, b: 20, l: 20, r: 20 },
+        height: 380
+    };
+
+    Plotly.react("crime-hierarchy-chart", trace, layout, plotlyConfig);
+}
+
+function renderWeaponPremiseFiltered() {
+    const slices = filterSlices(
+        whatState.data?.weapon_premise?.slices,
+        whatState.filters
+    );
+    if (!slices.length) {
+        renderEmptyState(
+            "weapon-premise-chart",
+            "No weapon-premise combinations for current filters."
+        );
+        return;
+    }
+
+    const matrix = new Map();
+    const weaponTotals = new Map();
+    const premiseTotals = new Map();
+    let total = 0;
+
+    slices.forEach((slice) => {
+        const weaponMap = matrix.get(slice.weapon) || new Map();
+        weaponMap.set(slice.premise, (weaponMap.get(slice.premise) || 0) + slice.count);
+        matrix.set(slice.weapon, weaponMap);
+        weaponTotals.set(slice.weapon, (weaponTotals.get(slice.weapon) || 0) + slice.count);
+        premiseTotals.set(slice.premise, (premiseTotals.get(slice.premise) || 0) + slice.count);
+        total += slice.count;
+    });
+
+    let weaponOrder = [...(whatState.data?.categories?.weapons ?? [])];
+    let premiseOrder = [...(whatState.data?.categories?.premises ?? [])];
+    if (whatState.filters.weaponSort === "desc") {
+        weaponOrder.sort(
+            (a, b) => (weaponTotals.get(b) || 0) - (weaponTotals.get(a) || 0)
+        );
+        premiseOrder.sort(
+            (a, b) => (premiseTotals.get(b) || 0) - (premiseTotals.get(a) || 0)
+        );
+    }
+
+    const z = [];
+    const customdata = [];
+    weaponOrder.forEach((weapon) => {
+        const rowMap = matrix.get(weapon) || new Map();
+        const row = [];
+        const shareRow = [];
+        premiseOrder.forEach((premise) => {
+            const value = rowMap.get(premise) || 0;
+            row.push(value);
+            const share = total ? (value / total) * 100 : 0;
+            shareRow.push(Number(share.toFixed(2)));
+        });
+        z.push(row);
+        customdata.push(shareRow);
+    });
+
+    const flatValues = z.flat();
+    const sortedValues = [...flatValues].sort((a, b) => a - b);
+    const percentileIdx = Math.floor(sortedValues.length * 0.8);
+    let colorCap = sortedValues[percentileIdx] || sortedValues[sortedValues.length - 1] || 1;
+    if (colorCap <= 0) {
+        colorCap = 1;
+    }
+
+    const intermediateCap = colorCap * 0.5;
+
+    const trace = [
+        {
+            type: "heatmap",
+            z,
+            x: premiseOrder.map((prem) => cleanLabel(prem)),
+            y: weaponOrder.map((weapon) => cleanLabel(weapon)),
+            colorscale: "Inferno",
+            hoverongaps: false,
+            customdata,
+            zmin: 0,
+            zmax: colorCap,
+            zmid: intermediateCap,
+            colorbar: {
+                title: "Incidents",
+                tickformat: "~s"
+            },
+            hovertemplate:
+                "Premises: %{x}<br>Weapon: %{y}<br>%{z:,} incidents<br>Share %{customdata:.2f}%<extra></extra>"
+        }
+    ];
+
+    const layout = {
+        ...plotlyBaseLayout,
+        margin: { t: 30, b: 120, l: 140, r: 10 },
+        xaxis: {
+            tickangle: -55,
+            tickfont: { size: 11 },
+            automargin: true
+        },
+        height: 560
+    };
+
+    Plotly.react("weapon-premise-chart", trace, layout, plotlyConfig);
+}
+
+function renderStatusSankeyFiltered() {
+    const slices = filterSlices(
+        whatState.data?.status_flow?.slices,
+        whatState.filters
+    );
+    if (!slices.length) {
+        renderEmptyState(
+            "status-sankey-chart",
+            "No status flow for current filters."
+        );
+        return;
+    }
+
+    const flows = [];
+    const crimeTotals = new Map();
+    const statusTotals = new Map();
+    let total = 0;
+
+    slices.forEach((slice) => {
+        flows.push(slice);
+        crimeTotals.set(slice.crime, (crimeTotals.get(slice.crime) || 0) + slice.count);
+        statusTotals.set(slice.status, (statusTotals.get(slice.status) || 0) + slice.count);
+        total += slice.count;
+    });
+
+    const baseCrimeOrder = whatState.data?.categories?.crimes ?? [];
+    const selectedCrime = whatState.filters.selectedCrime;
+    let crimeOrder = [];
+    if (selectedCrime && crimeTotals.get(selectedCrime)) {
+        crimeOrder = [selectedCrime];
+    } else {
+        crimeOrder = baseCrimeOrder
+            .map((crime) => ({ crime, count: crimeTotals.get(crime) || 0 }))
+            .filter((item) => item.count > 0)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 6)
+            .map((item) => item.crime);
+    }
+    if (!crimeOrder.length) {
+        renderEmptyState(
+            "status-sankey-chart",
+            "No status flow for current filters."
+        );
+        return;
+    }
+    const baseStatusOrder = whatState.data?.categories?.statuses ?? [];
+    let statusOrder = baseStatusOrder.filter((status) => statusTotals.get(status));
+    if (whatState.filters.statusSort === "desc") {
+        statusOrder.sort(
+            (a, b) => (statusTotals.get(b) || 0) - (statusTotals.get(a) || 0)
+        );
+    } else {
+        statusOrder.sort((a, b) =>
+            cleanLabel(a).localeCompare(cleanLabel(b), undefined, { sensitivity: "base" })
+        );
+    }
+    if (!selectedCrime) {
+        statusOrder = statusOrder.slice(0, 5);
+    }
+
+    const labels = [];
+    const crimeIndex = new Map();
+    const statusIndex = new Map();
+
+    crimeOrder.forEach((crime) => {
+        crimeIndex.set(crime, labels.length);
+        labels.push(cleanLabel(crime));
+    });
+
+    statusOrder.forEach((status) => {
+        statusIndex.set(status, labels.length);
+        labels.push(cleanLabel(status));
+    });
+
+    const spreadPositions = (count) => {
+        if (!count) return [];
+        if (count === 1) return [0.5];
+        const step = 1 / count;
+        return Array.from({ length: count }, (_, idx) => step * idx + step / 2);
+    };
+
+    const crimeYPositions = spreadPositions(crimeOrder.length);
+    const statusYPositions = spreadPositions(statusOrder.length);
+    const nodeX = [];
+    const nodeY = [];
+
+    crimeYPositions.forEach((pos) => {
+        nodeX.push(0.05);
+        nodeY.push(pos);
+    });
+    statusYPositions.forEach((pos) => {
+        nodeX.push(0.95);
+        nodeY.push(pos);
+    });
+
+    const source = [];
+    const target = [];
+    const value = [];
+    const shares = [];
+
+    flows.forEach((flow) => {
+        const sourceIdx = crimeIndex.get(flow.crime);
+        const targetIdx = statusIndex.get(flow.status);
+        if (sourceIdx === undefined || targetIdx === undefined) return;
+        source.push(sourceIdx);
+        target.push(targetIdx);
+        value.push(flow.count);
+        const share = total ? (flow.count / total) * 100 : 0;
+        shares.push(Number(share.toFixed(2)));
+    });
+
+    const crimePalette = ["#ff6b6b", "#ffd166", "#06d6a0", "#118ab2", "#9b5de5", "#f15bb5"];
+    const statusPalette = ["#4cc9f0", "#4895ef", "#560bad", "#b5179e", "#ff9770", "#00bbf0"];
+    const nodeColors = labels.map((_, idx) => {
+        if (idx < crimeOrder.length) {
+            return crimePalette[idx % crimePalette.length];
+        }
+        const statusIdx = idx - crimeOrder.length;
+        return statusPalette[statusIdx % statusPalette.length];
+    });
+
+    const trace = [
+        {
+            type: "sankey",
+            orientation: "h",
+            node: {
+                label: labels,
+                x: nodeX,
+                y: nodeY,
+                pad: 15,
+                thickness: 18,
+                color: nodeColors,
+                line: { color: "#111", width: 1 },
+                font: { color: "#ffffff" }
+            },
+            link: {
+                source,
+                target,
+                value,
+                customdata: shares,
+                color: source.map((srcIdx) => hexToRGBA(nodeColors[srcIdx], 0.45)),
+                hovertemplate:
+                    "%{source.label} → %{target.label}<br>%{value:,} incidents<br>Share %{customdata:.2f}%<extra></extra>"
+            }
+        }
+    ];
+
+    const layout = {
+        ...plotlyBaseLayout,
+        margin: { t: 110, b: 50, l: 50, r: 50 },
+        height: 560
+    };
+
+    Plotly.react("status-sankey-chart", trace, layout, plotlyConfig);
+}
+
+document.addEventListener("DOMContentLoaded", initWhatVisuals);
+
+
 document.getElementById('applyFilters')?.addEventListener('click', () => {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const crimeType = document.getElementById('crimeTypeFilter').value;
-    
-    console.log('Filters applied:', { startDate, endDate, crimeType });
-    alert('Filters applied! (Full interactivity will be implemented in next phase)');
- 
+    updateFiltersFromControls({ clearSelection: true });
 });
 
 document.getElementById('resetFilters')?.addEventListener('click', () => {
-    document.getElementById('startDate').value = '2020-01';
-    document.getElementById('endDate').value = '2024-09';
+    document.getElementById('startDate').value = DEFAULT_START_MONTH;
+    document.getElementById('endDate').value = DEFAULT_END_MONTH;
     document.getElementById('crimeTypeFilter').value = 'all';
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-    
-    alert('Filters reset!');
+    document.getElementById('weaponSort').value = 'default';
+    document.getElementById('statusSort').value = 'default';
+    updateFiltersFromControls({ clearSelection: true });
+});
+
+document.getElementById('weaponSort')?.addEventListener('change', (event) => {
+    whatState.filters.weaponSort = event.target.value;
+    updateWhatCharts();
+});
+
+document.getElementById('statusSort')?.addEventListener('change', (event) => {
+    whatState.filters.statusSort = event.target.value;
+    updateWhatCharts();
+});
+
+document.getElementById('clearWhatFilter')?.addEventListener('click', () => {
+    whatState.filters.selectedCrime = null;
+    updateWhatFilterChip();
+    updateWhatCharts();
+});
+
+const whatHelpButton = document.getElementById("whatHelpToggle");
+const whatHelpPanel = document.getElementById("whatHelpPanel");
+whatHelpButton?.addEventListener("click", () => {
+    const expanded = whatHelpButton.getAttribute("aria-expanded") === "true";
+    whatHelpButton.setAttribute("aria-expanded", String(!expanded));
+    if (whatHelpPanel) {
+        whatHelpPanel.style.display = expanded ? "none" : "block";
+    }
 });
 </script>
 
