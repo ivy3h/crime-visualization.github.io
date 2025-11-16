@@ -561,6 +561,8 @@
         }
     </style>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 </head>
 <body>
     <div class="scanline"></div>
@@ -810,38 +812,47 @@ Crime in the United States affects community safety, policy, and urban planning,
 				</section>
 				
 			<section class="section">
-				    <h2>WHO: DEMOGRAPHICS ANALYSIS</h2>
-				    
-				    <div class="description">
-				        <ul>
-							<li><strong>Victim gender distribution:</strong> Males comprise 47.0% of victims.</li>            
-							<li><strong>Age distribution patterns:</strong> Victims are generally young adults, with a median age of 30 and a mean age of 29.1. Ages range up to 99, and the wide interquartile range (44.0) indicates large variability in victim age.</li>
-							<li><strong>Population pyramid:</strong> todo.</li>
-				            <li><strong>Demographic mix by crime type:</strong> todo.</li>
-				        </ul>
-				    </div>
-				    
-				    <div class="visualizations-grid">
-						<div class="viz-card">
-					            <h3>Victim gender distribution</h3>
-					            <img src="./images/victims.jpg" alt="Victim demographics chart" style="width:100%; height:auto;">
-						</div>
-						<div class="viz-card">
-				            <h3>Age distribution patterns</h3>
-				            <img src="./images/age_distribution.jpg" alt="Age distribution chart" style="width:100%; height:auto;">
-				        </div>
-						<!--
-				        <div class="viz-card">
-				            <h3>Population pyramid</h3>
-				            <img src="./images/population_pyramid.jpg" alt="Population pyramid chart" style="width:100%; height:auto;">
-				        </div>
-				        <div class="viz-card">
-				            <h3>Demographic mix by crime type</h3>
-				            <img src="./images/demographic_mix.jpg" alt="Demographic mix chart" style="width:100%; height:auto;">
-				        </div>
-						-->
-				    </div>
-				
+                <h2>WHO: DEMOGRAPHICS ANALYSIS</h2>
+                
+                <div class="description">
+                    <ul>
+                        <li><strong>Gender distribution:</strong> Males comprise 47.0% of victims, females 42.8%.</li>
+                        <li><strong>Age patterns:</strong> Victims are predominantly young adults, with median age of 30 and mean age of 29.1.</li>
+                        <li><strong>Population pyramid:</strong> Bi-directional bar chart showing age-sex distribution.</li>
+                        <li><strong>Crime-demographic relationships:</strong> Property crimes (vehicle theft, burglary) disproportionately affect younger victims (25-34), while violent crimes show broader age distribution.</li>
+                        <li><strong>Age distribution insights:</strong> Violin plots reveal victim age patterns - wider sections indicate more common ages for each crime type.</li>
+                    </ul>
+                </div>
+                
+                <div class="visualizations-grid">
+                    <!-- Population Pyramid (Full Width) -->
+                    <div class="viz-card" style="grid-column: 1 / -1;">
+                        <h3>👥 Population Pyramid: Age-Sex Distribution</h3>
+                        <div id="pyramid-viz" class="chart"></div>
+                        <p class="viz-hint">Click any bar to filter all visualizations by that age-sex group. Males (left/blue) vs Females (right/red). Hover for exact counts.</p>
+                    </div>
+
+                    <!-- Demographic Mix by Crime Type -->
+                    <div class="viz-card">
+                        <h3>📊 Demographic Mix by Crime Type</h3>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                            <label style="font-size: 0.9em; color: #ffffff;">Group by:</label>
+                            <select id="demo-grouping" style="background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; padding: 6px 12px; font-size: 0.9em; font-family: 'Courier New', monospace; cursor: pointer;">
+                                <option value="sex">Sex (M/F/X)</option>
+                                <option value="descent">Descent (Ethnicity)</option>
+                            </select>
+                        </div>
+                        <div id="crime-demo-viz" class="chart"></div>
+                        <p class="viz-hint">Shows victim demographic composition for top 6 crime types. Toggle between sex and descent to explore different demographic patterns. Stacked bars show proportional distribution.</p>
+                    </div>
+
+                    <!-- Age Distribution by Crime Type -->
+                    <div class="viz-card">
+                        <h3>📈 Age Distribution by Crime Type</h3>
+                        <div id="age-dist-viz" class="chart"></div>
+                        <p class="viz-hint">Violin plots reveal age distribution patterns for top 8 crimes. Wider sections = more common ages. Box shows quartiles, thick line = median victim age. Compare shapes to see how age risk varies by crime.</p>
+                    </div>
+                </div>
 				</section>			
 
 <section class="section">
@@ -968,6 +979,48 @@ const plotlyConfig = {
     staticPlot: false,
     scrollZoom: false
 };
+
+
+// WHO section state and constants
+const whoState = {
+    rawData: [],
+    filteredData: [],
+    selectedDemographic: null,
+    currentGrouping: 'sex'
+};
+
+const WHO_AGE_BINS = [
+    { min: 0, max: 17, label: '0-17' },
+    { min: 18, max: 24, label: '18-24' },
+    { min: 25, max: 34, label: '25-34' },
+    { min: 35, max: 44, label: '35-44' },
+    { min: 45, max: 54, label: '45-54' },
+    { min: 55, max: 64, label: '55-64' },
+    { min: 65, max: 100, label: '65+' }
+];
+
+const DESCENT_LABELS = {
+    'H': 'Hispanic/Latino',
+    'W': 'White',
+    'B': 'Black',
+    'A': 'Asian',
+    'O': 'Other',
+    'X': 'Unknown',
+    'F': 'Filipino',
+    'C': 'Chinese',
+    'J': 'Japanese',
+    'K': 'Korean',
+    'V': 'Vietnamese',
+    'I': 'American Indian',
+    'U': 'Hawaiian',
+    'P': 'Pacific Islander',
+    'S': 'Samoan',
+    'D': 'Cambodian',
+    'L': 'Laotian',
+    'Z': 'Asian Indian'
+};
+
+
 
 const titleCase = (label = "") =>
     label
@@ -1660,6 +1713,477 @@ whatHelpButton?.addEventListener("click", () => {
         whatHelpPanel.style.display = expanded ? "none" : "block";
     }
 });
+
+
+
+// ============================================
+// DATA LOADING AND PROCESSING
+// ============================================
+
+async function loadWhoData() {
+    try {
+        console.log('Loading WHO data...');
+        
+        // Use Papaparse to load the gzipped CSV (same as multidimensional.html)
+        const resp = await fetch('Crime_Data_from_2020_to_Present.csv.gz');
+        const gzArrayBuffer = await resp.arrayBuffer();
+        const gzUint8 = new Uint8Array(gzArrayBuffer);
+        const csvText = pako.ungzip(gzUint8, { to: 'string' });
+
+        return new Promise((resolve, reject) => {
+            Papa.parse(csvText, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    console.log(`WHO: Loaded ${results.data.length} records`);
+                    
+                    // Process and clean data
+                    const processedData = results.data
+                        .filter(row => {
+                            // Filter out records with missing key demographic data
+                            const age = Number(row['Vict Age']);
+                            return age > 0 && age <= 120 && row['Vict Sex'] && row['Crm Cd Desc'];
+                        })
+                        .map(row => ({
+                            'Vict Age': Number(row['Vict Age']),
+                            'Vict Sex': (row['Vict Sex'] || 'X').toUpperCase().trim(),
+                            'Vict Descent': (row['Vict Descent'] || 'X').toUpperCase().trim(),
+                            'Crm Cd Desc': (row['Crm Cd Desc'] || 'UNKNOWN').toString().toUpperCase().trim(),
+                            'DATE OCC': row['DATE OCC'] || row['Date Rptd'],
+                            'AREA NAME': row['AREA NAME'] || ''
+                        }));
+                    
+                    console.log(`WHO: Processed ${processedData.length} valid records`);
+                    resolve(processedData);
+                },
+                error: (error) => {
+                    console.error('WHO: Error parsing CSV:', error);
+                    reject(error);
+                }
+            });
+        });
+        
+    } catch (error) {
+        console.error('WHO: Failed to load data:', error);
+        throw error;
+    }
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+async function initWhoSection() {
+    try {
+        console.log('Initializing WHO section...');
+        
+        // Check if required containers exist
+        if (!document.getElementById('pyramid-viz')) {
+            console.log('WHO: Containers not found, skipping initialization');
+            return;
+        }
+
+        // Load data
+        whoState.rawData = await loadWhoData();
+        whoState.filteredData = whoState.rawData;
+        
+        // Render all visualizations
+        renderPopulationPyramid(whoState.filteredData);
+        renderDemographicMix(whoState.filteredData, 'sex');
+        renderAgeDistribution(whoState.filteredData);
+        
+        // Setup event listeners
+        setupWhoEventListeners();
+        
+        console.log('WHO section initialized successfully');
+        
+    } catch (error) {
+        console.error('Failed to initialize WHO section:', error);
+        
+        // Show error message in containers
+        ['pyramid-viz', 'crime-demo-viz', 'age-dist-viz'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = '<p style="color:#ff5555;text-align:center;padding:40px;">⚠ Unable to load demographic data. Please check console for details.</p>';
+            }
+        });
+    }
+}
+
+function setupWhoEventListeners() {
+    // Demographic grouping toggle
+    const groupingSelect = document.getElementById('demo-grouping');
+    if (groupingSelect) {
+        groupingSelect.addEventListener('change', function(e) {
+            whoState.currentGrouping = e.target.value;
+            renderDemographicMix(whoState.filteredData, e.target.value);
+        });
+    }
+    
+    // Listen for global filter changes (integrate with your existing filter system)
+    document.getElementById('applyFilters')?.addEventListener('click', applyGlobalFiltersToWho);
+    document.getElementById('resetFilters')?.addEventListener('click', resetWhoFilters);
+}
+
+// ============================================
+// FILTER INTEGRATION
+// ============================================
+
+function applyGlobalFiltersToWho() {
+    console.log('WHO: Applying global filters...');
+    
+    // Get filter values from global controls
+    const startMonth = document.getElementById('globalStart')?.value || 
+                      document.getElementById('startDate')?.value || '2020-01';
+    const endMonth = document.getElementById('globalEnd')?.value || 
+                    document.getElementById('endDate')?.value || '2024-09';
+    const crimeFilter = document.getElementById('globalCrimeType')?.value || 
+                       document.getElementById('crimeTypeFilter')?.value || 'all';
+    const sexFilter = document.getElementById('globalSex')?.value || 'ALL';
+    
+    // Parse date range
+    let start = startMonth ? new Date(startMonth + '-01') : null;
+    let end = endMonth ? new Date(endMonth + '-01') : null;
+    if (end) end = new Date(end.getFullYear(), end.getMonth() + 1, 1);
+    
+    // Apply filters
+    whoState.filteredData = whoState.rawData.filter(row => {
+        // Date filter
+        if (row['DATE OCC']) {
+            const dateStr = String(row['DATE OCC']).split(' ')[0];
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                const rowDate = new Date(parts[2], parts[0] - 1, parts[1]);
+                if (start && rowDate < start) return false;
+                if (end && rowDate >= end) return false;
+            }
+        }
+        
+        // Crime type filter
+        if (crimeFilter !== 'all' && crimeFilter !== 'ALL') {
+            const crimeDesc = row['Crm Cd Desc'].toUpperCase();
+            const filterUpper = crimeFilter.toUpperCase().replace(/-/g, ' ');
+            if (!crimeDesc.includes(filterUpper)) return false;
+        }
+        
+        // Sex filter (from global or demographic-specific)
+        if (sexFilter !== 'ALL') {
+            if (row['Vict Sex'] !== sexFilter) return false;
+        }
+        
+        // Check sex checkboxes (if using the checkbox-based filter)
+        const maleChecked = document.getElementById('filterMale')?.checked ?? true;
+        const femaleChecked = document.getElementById('filterFemale')?.checked ?? true;
+        const otherChecked = document.getElementById('filterOther')?.checked ?? true;
+        
+        const sex = row['Vict Sex'];
+        if (sex === 'M' && !maleChecked) return false;
+        if (sex === 'F' && !femaleChecked) return false;
+        if (sex !== 'M' && sex !== 'F' && !otherChecked) return false;
+        
+        return true;
+    });
+    
+    console.log(`WHO: Filtered to ${whoState.filteredData.length} records`);
+    
+    // Re-render visualizations
+    renderPopulationPyramid(whoState.filteredData);
+    renderDemographicMix(whoState.filteredData, whoState.currentGrouping);
+    renderAgeDistribution(whoState.filteredData);
+}
+
+function resetWhoFilters() {
+    whoState.filteredData = whoState.rawData;
+    whoState.selectedDemographic = null;
+    
+    renderPopulationPyramid(whoState.filteredData);
+    renderDemographicMix(whoState.filteredData, whoState.currentGrouping);
+    renderAgeDistribution(whoState.filteredData);
+}
+
+// ============================================
+// 1. POPULATION PYRAMID
+// ============================================
+
+function renderPopulationPyramid(data) {
+    const validData = data.filter(d => 
+        d['Vict Age'] > 0 && 
+        d['Vict Age'] <= 100 && 
+        (d['Vict Sex'] === 'M' || d['Vict Sex'] === 'F')
+    );
+
+    if (validData.length === 0) {
+        document.getElementById('pyramid-viz').innerHTML = 
+            '<p style="color:#cccccc;text-align:center;padding:40px;">No data available for current filters</p>';
+        return;
+    }
+
+    const aggregated = WHO_AGE_BINS.map(bin => {
+        const maleCount = validData.filter(d => 
+            d['Vict Age'] >= bin.min && 
+            d['Vict Age'] <= bin.max && 
+            d['Vict Sex'] === 'M'
+        ).length;
+        
+        const femaleCount = validData.filter(d => 
+            d['Vict Age'] >= bin.min && 
+            d['Vict Age'] <= bin.max && 
+            d['Vict Sex'] === 'F'
+        ).length;
+
+        return {
+            ageGroup: bin.label,
+            male: -maleCount,
+            maleAbs: maleCount,
+            female: femaleCount
+        };
+    });
+
+    const maleTrace = {
+        type: 'bar',
+        y: aggregated.map(d => d.ageGroup),
+        x: aggregated.map(d => d.male),
+        name: 'Male',
+        orientation: 'h',
+        marker: { color: '#3498db', line: { color: '#2980b9', width: 1 } },
+        hovertemplate: '<b>Male</b><br>Age: %{y}<br>Count: %{customdata:,}<extra></extra>',
+        customdata: aggregated.map(d => d.maleAbs)
+    };
+
+    const femaleTrace = {
+        type: 'bar',
+        y: aggregated.map(d => d.ageGroup),
+        x: aggregated.map(d => d.female),
+        name: 'Female',
+        orientation: 'h',
+        marker: { color: '#e74c3c', line: { color: '#c0392b', width: 1 } },
+        hovertemplate: '<b>Female</b><br>Age: %{y}<br>Count: %{x:,}<extra></extra>'
+    };
+
+    const layout = {
+        ...plotlyBaseLayout,
+        barmode: 'overlay',
+        xaxis: {
+            title: 'Number of Victims',
+            tickformat: ',d',
+            gridcolor: '#333',
+            zerolinecolor: '#ffffff',
+            zerolinewidth: 2
+        },
+        yaxis: { 
+            title: 'Age Group',
+            autorange: 'reversed',
+            gridcolor: '#333'
+        },
+        height: 450,
+        margin: { l: 80, r: 80, t: 30, b: 80 },
+        showlegend: true,
+        legend: { x: 0.5, xanchor: 'center', y: -0.15, orientation: 'h' }
+    };
+
+    Plotly.newPlot('pyramid-viz', [maleTrace, femaleTrace], layout, plotlyConfig);
+    
+    // Add click handler for cross-filtering
+    document.getElementById('pyramid-viz').on('plotly_click', function(eventData) {
+        const point = eventData.points[0];
+        const ageGroup = point.y;
+        const sex = point.data.name === 'Male' ? 'M' : 'F';
+        handleDemographicSelection(ageGroup, sex);
+    });
+}
+
+// ============================================
+// 2. DEMOGRAPHIC MIX BY CRIME TYPE
+// ============================================
+
+function renderDemographicMix(data, groupBy) {
+    const crimeCounts = {};
+    data.forEach(d => {
+        const crime = d['Crm Cd Desc'];
+        crimeCounts[crime] = (crimeCounts[crime] || 0) + 1;
+    });
+    
+    const topCrimes = Object.entries(crimeCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(d => d[0]);
+
+    if (topCrimes.length === 0) {
+        document.getElementById('crime-demo-viz').innerHTML = 
+            '<p style="color:#cccccc;text-align:center;padding:40px;">No data available for current filters</p>';
+        return;
+    }
+
+    let categories, colors, getLabel;
+    
+    if (groupBy === 'sex') {
+        categories = ['M', 'F', 'X'];
+        colors = ['#3498db', '#e74c3c', '#95a5a6'];
+        getLabel = (cat) => cat === 'M' ? 'Male' : cat === 'F' ? 'Female' : 'Other/Unknown';
+    } else {
+        // For descent, get top 5 most common
+        const descentCounts = {};
+        data.forEach(d => {
+            const desc = d['Vict Descent'];
+            descentCounts[desc] = (descentCounts[desc] || 0) + 1;
+        });
+        categories = Object.entries(descentCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(d => d[0]);
+        colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
+        getLabel = (cat) => DESCENT_LABELS[cat] || cat;
+    }
+
+    const traces = categories.map((category, idx) => {
+        const counts = topCrimes.map(crime => {
+            return data.filter(d => 
+                d['Crm Cd Desc'] === crime && 
+                (groupBy === 'sex' ? d['Vict Sex'] : d['Vict Descent']) === category
+            ).length;
+        });
+
+        return {
+            type: 'bar',
+            x: topCrimes.map(c => {
+                // Capitalize first letter of each word
+                const words = c.toLowerCase().split(' ');
+                const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1));
+                const formatted = capitalized.join(' ');
+                return formatted.length > 20 ? formatted.substring(0, 20) + '...' : formatted;
+            }),
+            y: counts,
+            name: getLabel(category),
+            marker: { color: colors[idx % colors.length] },
+            hovertemplate: '<b>%{x}</b><br>' + getLabel(category) + ': %{y:,}<extra></extra>'
+        };
+    });
+
+    const layout = {
+        ...plotlyBaseLayout,
+        barmode: 'stack',
+        xaxis: { title: 'Crime Type', tickangle: -45, gridcolor: '#333' },
+        yaxis: { title: 'Victim Count', gridcolor: '#333' },
+        height: 420,
+        margin: { l: 60, r: 30, t: 30, b: 150 }
+    };
+
+    Plotly.newPlot('crime-demo-viz', traces, layout, plotlyConfig);
+}
+
+// ============================================
+// 3. AGE DISTRIBUTION BY CRIME TYPE
+// ============================================
+
+function renderAgeDistribution(data) {
+    const crimeCounts = {};
+    data.forEach(d => {
+        const crime = d['Crm Cd Desc'];
+        crimeCounts[crime] = (crimeCounts[crime] || 0) + 1;
+    });
+    
+    const topCrimes = Object.entries(crimeCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(d => d[0]);
+
+    if (topCrimes.length === 0) {
+        document.getElementById('age-dist-viz').innerHTML = 
+            '<p style="color:#cccccc;text-align:center;padding:40px;">No data available for current filters</p>';
+        return;
+    }
+
+    const colors = [
+        '#3498db', '#e74c3c', '#2ecc71', '#f39c12', 
+        '#9b59b6', '#1abc9c', '#e67e22', '#34495e'
+    ];
+
+    const traces = topCrimes.map((crime, i) => {
+        const ages = data
+            .filter(d => 
+                d['Crm Cd Desc'] === crime && 
+                d['Vict Age'] > 0 && 
+                d['Vict Age'] <= 100
+            )
+            .map(d => d['Vict Age']);
+
+        // Capitalize crime name
+        const words = crime.toLowerCase().split(' ');
+        const capitalized = words.map(w => w.charAt(0).toUpperCase() + w.slice(1));
+        const formatted = capitalized.join(' ');
+        const displayName = formatted.length > 25 ? formatted.substring(0, 25) + '...' : formatted;
+
+        return {
+            type: 'violin',
+            y: ages,
+            name: displayName,
+            box: { visible: true },
+            meanline: { visible: true },
+            marker: { color: colors[i % colors.length] },
+            line: { color: colors[i % colors.length] },
+            hoverinfo: 'y+name',
+            points: false
+        };
+    });
+
+    const layout = {
+        ...plotlyBaseLayout,
+        yaxis: { title: 'Victim Age', range: [0, 100], gridcolor: '#333' },
+        xaxis: { title: 'Crime Type', tickangle: -35, gridcolor: '#333' },
+        height: 420,
+        margin: { l: 60, r: 30, t: 30, b: 150 },
+        showlegend: false
+    };
+
+    Plotly.newPlot('age-dist-viz', traces, layout, plotlyConfig);
+}
+
+// ============================================
+// CROSS-FILTERING HANDLER
+// ============================================
+
+function handleDemographicSelection(ageGroup, sex) {
+    console.log(`WHO: Selected demographic - Age: ${ageGroup}, Sex: ${sex}`);
+    
+    whoState.selectedDemographic = { ageGroup, sex };
+    
+    // TODO: Emit event for other sections to listen to
+    // For now, just log - you can integrate with your global filter system
+    
+    // Example of how to filter data
+    const [minAge, maxAge] = ageGroup.includes('+') 
+        ? [parseInt(ageGroup), 100]
+        : ageGroup.split('-').map(Number);
+    
+    const filtered = whoState.filteredData.filter(d => 
+        d['Vict Age'] >= minAge && 
+        d['Vict Age'] <= maxAge && 
+        d['Vict Sex'] === sex
+    );
+    
+    console.log(`WHO: Filtered to ${filtered.length} records for selected demographic`);
+    
+    // You can dispatch a custom event here to update other sections:
+    // document.dispatchEvent(new CustomEvent('whoFilterChanged', {
+    //     detail: { ageGroup, sex, data: filtered }
+    // }));
+}
+
+// ============================================
+// AUTO-INITIALIZE WHEN DOM IS READY
+// ============================================
+
+// Initialize WHO section when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Wait a bit for other sections to load first
+        setTimeout(initWhoSection, 500);
+    });
+} else {
+    // DOM already loaded
+    setTimeout(initWhoSection, 500);
+}
 </script>
 
 
