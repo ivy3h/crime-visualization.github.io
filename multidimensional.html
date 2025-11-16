@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multidimensional Analysis</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+  
+</head>
+<body>
+  <div class="container">
+<header>
+  <h1>MULTIDIMENSIONAL ANALYSIS</h1>
+  <p>WHERE × WHEN × WHAT × WHO</p>
+</header>
+
+<!-- GLOBAL CONTROLS -->
+<div class="section" id="global-controls">
+  <div class="section-title">⚙️ GLOBAL CONTROLS &amp; CROSS-VIEW LINKING</div>
+  
+  <div class="section-desc">
+    Date, crime type, and victim filters apply to all panels below. Changing these controls recomputes the temporal
+    matrix, demographic facets, and regional fingerprints from the same filtered subset of incidents.
+  </div>
+  <div class="control-bar">
+    <div class="control-group">
+      <label>Date Range</label>
+      <input type="month" id="globalStart" value="2020-01" min="2020-01" max="2024-09" /> –
+      <input type="month" id="globalEnd" value="2024-09" min="2020-01" max="2024-09" />
+    </div>
+    <div class="control-group">
+      <label>Crime Type (Global)</label>
+      <select id="globalCrimeType">
+        <option value="ALL">All</option>
+        <option value="VEHICLE_THEFT">Vehicle Theft</option>
+        <option value="BURGLARY">Burglary</option>
+        <option value="ROBBERY">Robbery</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Victim Sex</label>
+      <select id="globalSex">
+        <option value="ALL">All</option>
+        <option value="M">Male</option>
+        <option value="F">Female</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Victim Age Group</label>
+      <select id="globalAge">
+        <option value="ALL">All</option>
+        <option value="LT18">&lt; 18</option>
+        <option value="18_30">18–30</option>
+        <option value="31_50">31–50</option>
+        <option value="GT50">50+</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Victim Descent</label>
+      <select id="globalDescent">
+        <option value="ALL">All</option>
+        <option value="W">W</option>
+        <option value="B">B</option>
+        <option value="H">H</option>
+        <option value="A">A</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Severity (Part 1–2)</label>
+      <select id="globalSeverity">
+        <option value="ALL">Part 1 + Part 2</option>
+        <option value="PART1">Part 1 only</option>
+        <option value="PART2">Part 2 only</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <button class="btn" id="applyFilters">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- CRIME TYPE × TIME -->
+<div class="section" id="crime-time-section">
+  <div class="section-title">⏱️ CRIME TYPE × TIME (TEMPORAL MATRIX)</div>
+  
+  <div class="section-desc">
+    Faceted hourly charts (one per top crime type) or a single overlaid chart. The checkbox list selects which crime
+    types to show; the view toggle switches between small multiples and a multi-line overlay.
+  </div>
+  <div class="card">
+    <div class="sub-controls">
+      <div class="toggle-group">
+        <label>View mode:</label>
+        <label><input type="radio" name="ctViewMode" value="grid" checked /> Grid (small multiples)</label>
+        <label><input type="radio" name="ctViewMode" value="overlay" /> Overlay (multi-line)</label>
+      </div>
+      <div>
+        <span>Crime types:</span>
+        <div id="crimeTypeCheckboxes" class="checkbox-group"></div>
+      </div>
+    </div>
+    <div id="ct_grid" class="grid-container" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;"></div>
+    <div id="ct_overlay" class="chart" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- DEMOGRAPHIC × CRIME TYPE -->
+<div class="section" id="demo-section">
+  <div class="section-title">👥 DEMOGRAPHIC × CRIME TYPE (VICTIM–OFFENSE)</div>
+  
+  <div class="section-desc">
+    Stacked and grouped bars show how victim sex, age groups, and descent distribute across the most frequent crime
+    types in the filtered subset.
+  </div>
+  <div class="card"><div id="demo_sex" class="chart"></div></div>
+  <div class="card"><div id="demo_age" class="chart"></div></div>
+  <div class="card"><div id="demo_descent" class="chart"></div></div>
+</div>
+
+<!-- REGION HOTSPOT × TIME FINGERPRINT -->
+<div class="section" id="region-section">
+  <div class="section-title">📍 REGION HOTSPOT × TIME FINGERPRINT</div>
+
+<!-- 📌 EMBEDDED MAP FOR REGION SELECTION -->
+<div class="card" style="margin-bottom:16px;">
+  <iframe src="la_crime_map.html" id="regionMapFrame" style="width:100%; height:420px; border:none; border-radius:8px;"></iframe>
+</div>
+  
+  <div class="section-desc">
+    When integrated with the map, clicking a hotspot or AREA will send the selected region here. Hourly, day-of-week,
+    and monthly fingerprints are recomputed from the same globally filtered data.
+  </div>
+  <div class="card">
+    <div id="region_title" style="font-size:0.9em; margin-bottom:4px; color:#ccc;">Temporal signature – (all regions)</div>
+    <div id="region_hour" class="chart"></div>
+  </div>
+  <div class="card"><div id="region_dow" class="chart"></div></div>
+  <div class="card"><div id="region_month" class="chart"></div></div>
+</div>
+
+<script>
+
+// ======== THEME (match WHEN style) ========
+function baseLayout(overrides) {
+  return Object.assign({
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#ffffff', family: 'Courier New, monospace' },
+    xaxis: { gridcolor: '#333', zerolinecolor: '#555' },
+    yaxis: { gridcolor: '#333', zerolinecolor: '#555', rangemode: 'tozero' }, // FIX
+    margin: { l: 40, r: 20, t: 25, b: 35 },
+    showlegend: true,
+    legend: { orientation: 'h', x: 0, y: 1.1, font: { size: 9 } }
+  }, overrides || {});
+}
+
+let rawData = [];
+let filteredData = [];
+let topCrimeTypesCache = [];
+let selectedCrimeTypes = [];
+let viewMode = 'grid';
+let currentRegion = null;  // 来自地图的当前区域名
+
+// ---------- helpers ----------
+function parseDateOcc(str) {
+  if (!str) return null;
+  const parts = String(str).split(' ');
+  const datePart = parts[0];
+  const segs = datePart.split(/[\/]/);
+  if (segs.length !== 3) return null;
+  const m = Number(segs[0]);
+  const d = Number(segs[1]);
+  const y = Number(segs[2]);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+function parseHour(timeVal) {
+  if (timeVal === null || timeVal === undefined || timeVal === '') return null;
+  const num = Number(timeVal);
+  if (Number.isNaN(num)) return null;
+  const h = Math.floor(num / 100);
+  if (h < 0 || h > 23) return null;
+  return h;
+}
+
+// ---------- load gzipped CSV ----------
+async function loadData() {
+  try {
+    const resp = await fetch('Crime_Data_from_2020_to_Present.csv.gz');
+    const gzArrayBuffer = await resp.arrayBuffer();
+    const gzUint8 = new Uint8Array(gzArrayBuffer);
+    const csvText = pako.ungzip(gzUint8, { to: 'string' });
+
+    Papa.parse(csvText, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: (res) => {
+        rawData = res.data.map(r => {
+          const dateOcc = parseDateOcc(r['DATE OCC'] || r['Date Rptd'] || r['DATE_OCC']);
+          const hour = parseHour(r['TIME OCC'] || r['TIME_OCC']);
+          return Object.assign({}, r, { __dateOcc: dateOcc, __hour: hour });
+        }).filter(r => r.__dateOcc);
+
+        applyFilters();
+      }
+    });
+
+  } catch (e) {
+    console.error("Failed to load or unzip CSV:", e);
+  }
+}
+
+function getTopCrimeTypes(data, k) {
+  const counts = {};
+  data.forEach(r => {
+    const desc = (r['Crm Cd Desc'] || 'UNKNOWN').toString();
+    counts[desc] = (counts[desc] || 0) + 1;
+  });
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, k)
+    .map(([d]) => d);
+}
+
+// ---------- global filtering ----------
+function applyFilters() {
+  if (!rawData.length) return;
+
+  const startMonth = document.getElementById('globalStart').value;
+  const endMonth = document.getElementById('globalEnd').value;
+  const crimeFilter = document.getElementById('globalCrimeType').value;
+  const sexFilter = document.getElementById('globalSex').value;
+  const ageFilter = document.getElementById('globalAge').value;
+  const descFilter = document.getElementById('globalDescent').value;
+  const sevFilter = document.getElementById('globalSeverity').value;
+
+  let start = startMonth ? new Date(startMonth + '-01') : null;
+  let end = endMonth ? new Date(endMonth + '-01') : null;
+  if (end) end = new Date(end.getFullYear(), end.getMonth() + 1, 1);
+
+  filteredData = rawData.filter(r => {
+    const d = r.__dateOcc;
+    if (!d) return false;
+    if (start && d < start) return false;
+    if (end && d >= end) return false;
+
+    const desc = (r['Crm Cd Desc'] || '').toUpperCase();
+    if (crimeFilter === 'VEHICLE_THEFT') {
+      if (!desc.includes('VEHICLE') || !desc.includes('STOLEN')) return false;
+    } else if (crimeFilter === 'BURGLARY') {
+      if (!desc.includes('BURGLARY')) return false;
+    } else if (crimeFilter === 'ROBBERY') {
+      if (!desc.includes('ROBBERY')) return false;
+    }
+
+    const sex = (r['Vict Sex'] || '').toUpperCase();
+    if (sexFilter !== 'ALL' && sex !== sexFilter) return false;
+
+    const age = Number(r['Vict Age']);
+    if (ageFilter !== 'ALL') {
+      if (!Number.isFinite(age) || age <= 0) return false;
+      if (ageFilter === 'LT18' && !(age < 18)) return false;
+      if (ageFilter === '18_30' && !(age >= 18 && age <= 30)) return false;
+      if (ageFilter === '31_50' && !(age > 30 && age <= 50)) return false;
+      if (ageFilter === 'GT50' && !(age > 50)) return false;
+    }
+
+    const vd = (r['Vict Descent'] || '').toUpperCase();
+    if (descFilter !== 'ALL' && vd !== descFilter) return false;
+
+    const part = r['Part 1-2'] || r['Part_1-2'];
+    if (sevFilter === 'PART1' && part !== 1) return false;
+    if (sevFilter === 'PART2' && part !== 2) return false;
+
+    return true;
+  });
+
+  topCrimeTypesCache = getTopCrimeTypes(filteredData, 6);
+  buildCrimeTypeCheckboxes();
+
+  drawCrimeTimeSection();
+  drawDemographicSection();
+  drawRegionSection();
+}
+
+// ---------- crime-type checkboxes ----------
+function buildCrimeTypeCheckboxes() {
+  const container = document.getElementById('crimeTypeCheckboxes');
+  container.innerHTML = '';
+  if (!topCrimeTypesCache.length) return;
+
+  if (!selectedCrimeTypes.length) {
+    selectedCrimeTypes = topCrimeTypesCache.slice();
+  }
+
+  topCrimeTypesCache.forEach(crime => {
+    const id = 'ct_cb_' + btoa(crime).replace(/=/g, '');
+    const label = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = crime;
+    cb.id = id;
+    cb.checked = selectedCrimeTypes.includes(crime);
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        if (!selectedCrimeTypes.includes(crime)) selectedCrimeTypes.push(crime);
+      } else {
+        selectedCrimeTypes = selectedCrimeTypes.filter(c => c !== crime);
+      }
+      if (!selectedCrimeTypes.length) {
+        selectedCrimeTypes = topCrimeTypesCache.slice();
+      }
+      drawCrimeTimeSection();
+    });
+    label.appendChild(cb);
+    const span = document.createElement('span');
+    span.textContent = crime;
+    label.appendChild(span);
+    container.appendChild(label);
+  });
+}
+
+function setupViewModeToggle() {
+  const radios = document.querySelectorAll('input[name="ctViewMode"]');
+  radios.forEach(r => {
+    r.addEventListener('change', () => {
+      viewMode = r.value;
+      drawCrimeTimeSection();
+    });
+  });
+}
+
+// ---------- draw Crime Type × Time ----------
+function hourlySeriesForCrime(data, crimeDesc) {
+  const hours = [...Array(24).keys()];
+  const counts = new Array(24).fill(0);
+  data.forEach(r => {
+    const desc = (r['Crm Cd Desc'] || '').toUpperCase();
+    if (desc === crimeDesc.toUpperCase()) {
+      const h = r.__hour;
+      if (h != null) counts[h]++;
+    }
+  });
+  return { hours, counts };
+}
+
+function drawCrimeTimeSection() {
+  const gridContainer = document.getElementById('ct_grid');
+  const overlayDiv = document.getElementById('ct_overlay');
+
+  if (!filteredData.length || !topCrimeTypesCache.length) {
+    gridContainer.innerHTML = '';
+    overlayDiv.style.display = 'none';
+    return;
+  }
+
+  const crimes = selectedCrimeTypes.length ? selectedCrimeTypes : topCrimeTypesCache.slice();
+
+  if (viewMode === 'grid') {
+    overlayDiv.style.display = 'none';
+    gridContainer.style.display = 'grid';
+    gridContainer.innerHTML = '';
+
+    crimes.forEach(crime => {
+      const card = document.createElement('div');
+      card.className = 'small-multiple-card';
+      const title = document.createElement('div');
+      title.className = 'small-multiple-title';
+      title.textContent = crime;
+      const chartDiv = document.createElement('div');
+      chartDiv.className = 'small-chart-plot';
+      card.appendChild(title);
+      card.appendChild(chartDiv);
+      gridContainer.appendChild(card);
+
+      const series = hourlySeriesForCrime(filteredData, crime);
+      Plotly.newPlot(chartDiv, [{
+        x: series.hours,
+        y: series.counts,
+        mode: 'lines+markers',
+        name: crime,
+        line: { color: '#ffffff' },
+        marker: { color: '#ff5555', size: 5 }
+      }], baseLayout({
+        showlegend: false,
+        xaxis: { title: 'Hour', gridcolor: '#333', zerolinecolor: '#555', dtick: 6 },
+        yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+      }), { displayModeBar: false });
+    });
+
+  } else {
+    gridContainer.style.display = 'none';
+    gridContainer.innerHTML = '';
+    overlayDiv.style.display = 'block';
+
+    const palette = ['#ff5555', '#55ff55', '#5599ff', '#ffcc55', '#ff55ff', '#55ffff'];
+    const traces = crimes.map((crime, idx) => {
+      const series = hourlySeriesForCrime(filteredData, crime);
+      return {
+        x: series.hours,
+        y: series.counts,
+        mode: 'lines+markers',
+        name: crime,
+        line: { color: palette[idx % palette.length] },
+        marker: { color: palette[idx % palette.length], size: 5 }
+      };
+    });
+
+    Plotly.newPlot(overlayDiv, traces, baseLayout({
+      xaxis: { title: 'Hour', gridcolor: '#333', zerolinecolor: '#555', dtick: 6 },
+      yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+    }), { displayModeBar: false });
+  }
+}
+
+// ---------- draw Demographic × Crime Type ----------
+function drawDemographicSection() {
+  const sexDiv = document.getElementById('demo_sex');
+  const ageDiv = document.getElementById('demo_age');
+  const descDiv = document.getElementById('demo_descent');
+
+  if (!filteredData.length) {
+    Plotly.purge(sexDiv);
+    Plotly.purge(ageDiv);
+    Plotly.purge(descDiv);
+    return;
+  }
+
+  const crimes = getTopCrimeTypes(filteredData, 4);
+
+  const sexBuckets = ['M', 'F', 'O'];
+  const sexCounts = {
+    M: new Array(crimes.length).fill(0),
+    F: new Array(crimes.length).fill(0),
+    O: new Array(crimes.length).fill(0)
+  };
+
+  filteredData.forEach(r => {
+    const cdesc = (r['Crm Cd Desc'] || '').toUpperCase();
+    const idx = crimes.findIndex(c => c.toUpperCase() === cdesc);
+    if (idx === -1) return;
+    const s = (r['Vict Sex'] || '').toUpperCase();
+    const key = s === 'M' ? 'M' : s === 'F' ? 'F' : 'O';
+    sexCounts[key][idx]++;
+  });
+
+  const sexData = [
+    { x: crimes, y: sexCounts.M, name: 'Male', type: 'bar' },
+    { x: crimes, y: sexCounts.F, name: 'Female', type: 'bar' },
+    { x: crimes, y: sexCounts.O, name: 'Other/Unknown', type: 'bar' }
+  ];
+
+  Plotly.newPlot(sexDiv, sexData, baseLayout({
+    barmode: 'stack',
+    xaxis: { title: 'Crime Type', tickangle: -30 },
+    yaxis: { title: 'Victim Count', rangemode: 'tozero' } // FIX
+  }), { displayModeBar: false });
+
+  const ageGroups = ['<18', '18-30', '31-50', '50+'];
+  const ageCounts = {
+    '<18': new Array(crimes.length).fill(0),
+    '18-30': new Array(crimes.length).fill(0),
+    '31-50': new Array(crimes.length).fill(0),
+    '50+': new Array(crimes.length).fill(0)
+  };
+
+  filteredData.forEach(r => {
+    const cdesc = (r['Crm Cd Desc'] || '').toUpperCase();
+    const idx = crimes.findIndex(c => c.toUpperCase() === cdesc);
+    if (idx === -1) return;
+    const age = Number(r['Vict Age']);
+    if (!Number.isFinite(age) || age <= 0) return;
+    let g = '18-30';
+    if (age < 18) g = '<18';
+    else if (age <= 30) g = '18-30';
+    else if (age <= 50) g = '31-50';
+    else g = '50+';
+    ageCounts[g][idx]++;
+  });
+
+  const ageData = ageGroups.map(g => ({
+    x: crimes,
+    y: ageCounts[g],
+    name: g,
+    type: 'bar'
+  }));
+
+  Plotly.newPlot(ageDiv, ageData, baseLayout({
+    barmode: 'group',
+    xaxis: { title: 'Crime Type', tickangle: -30 },
+    yaxis: { title: 'Victim Count', rangemode: 'tozero' } // FIX
+  }), { displayModeBar: false });
+
+  const descentTotals = {};
+  filteredData.forEach(r => {
+    const d = (r['Vict Descent'] || 'UNK').toUpperCase();
+    descentTotals[d] = (descentTotals[d] || 0) + 1;
+  });
+  const topDescents = Object.entries(descentTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([d]) => d);
+
+  const descentCounts = {};
+  topDescents.forEach(d => {
+    descentCounts[d] = new Array(crimes.length).fill(0);
+  });
+
+  filteredData.forEach(r => {
+    const cdesc = (r['Crm Cd Desc'] || '').toUpperCase();
+    const idx = crimes.findIndex(c => c.toUpperCase() === cdesc);
+    if (idx === -1) return;
+    const d = (r['Vict Descent'] || 'UNK').toUpperCase();
+    if (!topDescents.includes(d)) return;
+    descentCounts[d][idx]++;
+  });
+
+  const descData = topDescents.map(d => ({
+    x: crimes,
+    y: descentCounts[d],
+    name: d,
+    type: 'bar'
+  }));
+
+  Plotly.newPlot(descDiv, descData, baseLayout({
+    barmode: 'stack',
+    xaxis: { title: 'Crime Type', tickangle: -30 },
+    yaxis: { title: 'Victim Count', rangemode: 'tozero' } // FIX
+  }), { displayModeBar: false });
+}
+
+// ---------- draw Region Hotspot × Time ----------
+function drawRegionSection() {
+  const hourDiv = document.getElementById('region_hour');
+  const dowDiv = document.getElementById('region_dow');
+  const monthDiv = document.getElementById('region_month');
+  const titleEl = document.getElementById('region_title');
+
+  if (!filteredData.length) {
+    titleEl.textContent = 'Temporal signature – (no data)';
+    Plotly.purge(hourDiv);
+    Plotly.purge(dowDiv);
+    Plotly.purge(monthDiv);
+    return;
+  }
+
+  const regionField = 'AREA NAME';
+  let regionData = filteredData;
+
+  if (currentRegion) {
+    regionData = filteredData.filter(r => {
+      const areaName = (r[regionField] || '').toString().trim().toUpperCase();
+      const a = areaName;
+      const b = currentRegion.toUpperCase();
+      return a === b || a.includes(b) || b.includes(a);
+    });
+    if (!regionData.length) regionData = filteredData;
+  }
+
+  titleEl.textContent = currentRegion
+    ? `Temporal signature – ${currentRegion}`
+    : 'Temporal signature – (all regions)';
+
+  const hoursArr = new Array(24).fill(0);
+  const dowArr = new Array(7).fill(0);
+  const monthArr = new Array(12).fill(0);
+
+  regionData.forEach(r => {
+    const h = r.__hour;
+    if (h != null) hoursArr[h]++;
+    const d = r.__dateOcc;
+    if (d) {
+      let dw = (d.getDay() + 6) % 7;
+      dowArr[dw]++;
+      monthArr[d.getMonth()]++;
+    }
+  });
+
+  const hours = [...Array(24).keys()];
+  const dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  Plotly.newPlot(hourDiv, [{
+    x: hours,
+    y: hoursArr,
+    mode: 'lines+markers',
+    name: 'Hourly',
+    line: { color: '#ffffff' },
+    marker: { color: '#ff5555', size: 5 }
+  }], baseLayout({
+    xaxis: { title: 'Hour', dtick: 6 },
+    yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+  }), { displayModeBar: false });
+
+  Plotly.newPlot(dowDiv, [{
+    x: dowLabels,
+    y: dowArr,
+    type: 'bar',
+    name: 'DOW',
+    marker: { color: '#ffffff' }
+  }], baseLayout({
+    xaxis: { title: 'Day of Week' },
+    yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+  }), { displayModeBar: false });
+
+  Plotly.newPlot(monthDiv, [{
+    x: monthLabels,
+    y: monthArr,
+    mode: 'lines+markers',
+    name: 'Monthly',
+    line: { color: '#ffffff' },
+    marker: { color: '#ff5555', size: 5 }
+  }], baseLayout({
+    xaxis: { title: 'Month', tickangle: -45 },
+    yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+  }), { displayModeBar: false });
+}
+
+// ---------- Events & init ----------
+document.getElementById('applyFilters').addEventListener('click', applyFilters);
+setupViewModeToggle();
+
+window.addEventListener('message', (event) => {
+  if (!event.data || event.data.type !== 'region-selected') return;
+  currentRegion = event.data.regionName || event.data.areaName || null;
+  drawRegionSection();
+});
+
+loadData();
+
+</script>
+
+  </div>
+</body>
+</html>
