@@ -574,67 +574,6 @@
             <div class="date-range">[Team: SMOOTH CRIMINAL]</div>
         </header>
 
-<div class="content" style="margin-top: 20px;">
-	    <section class="section">
-	        <h2>GLOBAL CONTROLS</h2>
-	        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: end; margin-bottom: 15px;">
-	            <!-- Date Range -->
-	            <div>
-	                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">📅 DATE RANGE</h4>
-	                <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="month" id="startDate" value="2022-10" min="2020-01" max="2024-09" 
-                           style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; font-size: 0.9em; flex: 1;">
-	                    <span style="color: #ffffff; font-size: 0.9em;">to</span>
-	                    <input type="month" id="endDate" value="2024-09" min="2020-01" max="2024-09"
-	                           style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; font-size: 0.9em; flex: 1;">
-	                </div>
-	            </div>
-	            
-            <!-- Crime Type -->
-            <div>
-                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">🔍 CRIME TYPE</h4>
-					<select id="crimeTypeFilter" style="padding: 6px; background: rgba(0,0,0,0.8); color: #ffffff; border: 1px solid #555555; width: 100%; font-size: 0.9em;">
-					    <option value="all">All Crime Types</option>
-					    <option value="vehicle-stolen">Vehicle - Stolen</option>
-					    <option value="battery-simple-assault">Battery - Simple Assault</option>
-					    <option value="burglary-from-vehicle">Burglary from Vehicle</option>
-					    <option value="theft-of-identity">Theft of Identity</option>
-					    <option value="vandalism-felony">Vandalism - Felony</option>
-					    <option value="burglary">Burglary</option>
-					    <option value="assault-deadly-weapon">Assault with Deadly Weapon</option>
-					    <option value="theft-petty">Theft Plain - Petty</option>
-					    <option value="intimate-partner-assault">Intimate Partner Assault</option>
-					    <option value="theft-from-motor-vehicle">Theft from Motor Vehicle</option>
-					</select>
-            </div>
-	            
-	            <!-- Demographics -->
-	            <div>
-	                <h4 style="color: #ffffff; margin-bottom: 8px; font-size: 0.9em;">👥 VICTIM SEX</h4>
-	                <div style="display: flex; gap: 15px;">
-	                    <label style="color: #ffffff; font-size: 0.9em; cursor: pointer;">
-	                        <input type="checkbox" id="filterMale" checked> Male
-	                    </label>
-	                    <label style="color: #ffffff; font-size: 0.9em; cursor: pointer;">
-	                        <input type="checkbox" id="filterFemale" checked> Female
-	                    </label>
-	                    <label style="color: #ffffff; font-size: 0.9em; cursor: pointer;">
-	                        <input type="checkbox" id="filterOther" checked> Other
-	                    </label>
-	                </div>
-	            </div>
-	        </div>
-	        
-	        <div style="display: flex; gap: 10px;">
-	            <button id="applyFilters" style="padding: 8px 20px; background: transparent; color: #ffffff; border: 2px solid #ffffff; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; font-size: 0.9em;">
-	                >> APPLY
-	            </button>
-	            <button id="resetFilters" style="padding: 8px 20px; background: transparent; color: #ffffff; border: 2px solid #555555; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9em;">
-	                RESET
-	            </button>
-	        </div>
-	    </section>
-	</div>
         <div class="content">
             <section class="section">
                 <h2>MISSION BRIEFING</h2>
