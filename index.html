@@ -819,8 +819,8 @@ Crime in the United States affects community safety, policy, and urban planning,
                         <li><strong>Gender distribution:</strong> Males comprise 47.0% of victims, females 42.8%.</li>
                         <li><strong>Age patterns:</strong> Victims are predominantly young adults, with median age of 30 and mean age of 29.1.</li>
                         <li><strong>Population pyramid:</strong> Bi-directional bar chart showing age-sex distribution.</li>
-                        <li><strong>Crime-demographic relationships:</strong> Property crimes (vehicle theft, burglary) disproportionately affect younger victims (25-34), while violent crimes show broader age distribution.</li>
-                        <li><strong>Age distribution insights:</strong> Violin plots reveal victim age patterns - wider sections indicate more common ages for each crime type.</li>
+                        <li><strong>Demographic Mix by Crime Type:</strong> Shows victim demographic composition for top 8 crime types.</li>
+                        <li><strong>Age Distribution by Crime Type</strong> Violin plots reveal age distribution patterns for top 8 crimes.</li>
                     </ul>
                 </div>
                 
@@ -843,7 +843,7 @@ Crime in the United States affects community safety, policy, and urban planning,
                             </select>
                         </div>
                         <div id="crime-demo-viz" class="chart"></div>
-                        <p class="viz-hint">Shows victim demographic composition for top 6 crime types. Toggle between sex and descent to explore different demographic patterns. Stacked bars show proportional distribution.</p>
+                        <p class="viz-hint">Shows victim demographic composition for top 8 crime types. Toggle between sex and descent to explore different demographic patterns. Stacked bars show proportional distribution.</p>
                     </div>
 
                     <!-- Age Distribution by Crime Type -->
@@ -1983,7 +1983,7 @@ function renderDemographicMix(data, groupBy) {
     
     const topCrimes = Object.entries(crimeCounts)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
+        .slice(0, 8)
         .map(d => d[0]);
 
     if (topCrimes.length === 0) {
