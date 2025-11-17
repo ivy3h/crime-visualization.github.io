@@ -1002,22 +1002,18 @@ const filterSlices = (slices, filters) => {
 const whatState = {
     data: null,
     filters: {
-        start: document.getElementById("startDate")?.value || DEFAULT_START_MONTH,
-        end: document.getElementById("endDate")?.value || DEFAULT_END_MONTH,
+        start: DEFAULT_START_MONTH,  
+        end: DEFAULT_END_MONTH,
         sexes: new Set(["M", "F", "O"]),
         crimeType: "all",
         selectedCrime: null,
-        weaponSort: document.getElementById("weaponSort")?.value || "default",
-        statusSort: document.getElementById("statusSort")?.value || "default"
+        weaponSort: "default",
+        statusSort: "default"
     }
 };
 
 function getSelectedSexSet() {
-    const set = new Set();
-    if (document.getElementById("filterMale")?.checked) set.add("M");
-    if (document.getElementById("filterFemale")?.checked) set.add("F");
-    if (document.getElementById("filterOther")?.checked) set.add("O");
-    return set;
+    return new Set(["M", "F", "O"]);
 }
 
 async function initWhatVisuals() {
@@ -1037,7 +1033,6 @@ async function initWhatVisuals() {
         }
         const data = await response.json();
         whatState.data = data;
-        populateCrimeTypeOptions(data);
         updateFiltersFromControls({ clearSelection: true, skipRender: true });
         updateWhatFilterChip();
         updateWhatCharts();
@@ -1050,37 +1045,18 @@ async function initWhatVisuals() {
     }
 }
 
-function populateCrimeTypeOptions(data) {
-    const select = document.getElementById("crimeTypeFilter");
-    if (!select) return;
-    const existingOptions = [...select.querySelectorAll("option")];
-    existingOptions
-        .filter((option) => option.value && option.value !== "all")
-        .forEach((option) => option.remove());
 
-    const frag = document.createDocumentFragment();
-    (data?.crime_types?.totals ?? []).forEach((item) => {
-        const option = document.createElement("option");
-        option.value = item.crime;
-        option.textContent = cleanLabel(item.crime);
-        frag.appendChild(option);
-    });
-    select.appendChild(frag);
-}
 
 function updateFiltersFromControls({ clearSelection = false, skipRender = false } = {}) {
-    whatState.filters.start =
-        document.getElementById("startDate")?.value || whatState.filters.start;
-    whatState.filters.end =
-        document.getElementById("endDate")?.value || whatState.filters.end;
-    whatState.filters.sexes = getSelectedSexSet();
-    if (clearSelection) {
-        whatState.filters.selectedCrime = null;
-    }
     whatState.filters.weaponSort =
         document.getElementById("weaponSort")?.value || "default";
     whatState.filters.statusSort =
         document.getElementById("statusSort")?.value || "default";
+
+    if (clearSelection) {
+        whatState.filters.selectedCrime = null;
+    }
+
     if (!skipRender) {
         updateWhatFilterChip();
         updateWhatCharts();
@@ -1606,19 +1582,20 @@ function renderStatusSankeyFiltered() {
 
 document.addEventListener("DOMContentLoaded", initWhatVisuals);
 
-
-document.getElementById('applyFilters')?.addEventListener('click', () => {
-    updateFiltersFromControls({ clearSelection: true });
+document.getElementById('weaponSort')?.addEventListener('change', (event) => {
+    whatState.filters.weaponSort = event.target.value;
+    updateWhatCharts();
 });
 
-document.getElementById('resetFilters')?.addEventListener('click', () => {
-    document.getElementById('startDate').value = DEFAULT_START_MONTH;
-    document.getElementById('endDate').value = DEFAULT_END_MONTH;
-    document.getElementById('crimeTypeFilter').value = 'all';
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
-    document.getElementById('weaponSort').value = 'default';
-    document.getElementById('statusSort').value = 'default';
-    updateFiltersFromControls({ clearSelection: true });
+document.getElementById('statusSort')?.addEventListener('change', (event) => {
+    whatState.filters.statusSort = event.target.value;
+    updateWhatCharts();
+});
+
+document.getElementById('clearWhatFilter')?.addEventListener('click', () => {
+    whatState.filters.selectedCrime = null;
+    updateWhatFilterChip();
+    updateWhatCharts();
 });
 
 document.getElementById('weaponSort')?.addEventListener('change', (event) => {
