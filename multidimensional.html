@@ -19,7 +19,7 @@
 
 <!-- GLOBAL CONTROLS -->
 <div class="section" id="global-controls">
-  <div class="section-title">⚙️ GLOBAL CONTROLS &amp; CROSS-VIEW LINKING</div>
+  <div class="section-title">⚙️ GLOBAL CONTROLS & CROSS-VIEW LINKING</div>
   
   <div class="section-desc">
     Date, crime type, and victim filters apply to all panels below. Changing these controls recomputes the temporal
@@ -107,13 +107,19 @@
   </div>
 </div>
 
-<!-- DEMOGRAPHIC × CRIME TYPE -->
+<!-- DEMOGRAPHIC × REGION -->
 <div class="section" id="demo-section">
-  <div class="section-title">👥 DEMOGRAPHIC × CRIME TYPE (VICTIM–OFFENSE)</div>
+  <div class="section-title">👥 DEMOGRAPHIC × REGION</div>
   
   <div class="section-desc">
-    Stacked and grouped bars show how victim sex, age groups, and descent distribute across the most frequent crime
-    types in the filtered subset.
+    Click on the map below to select a region. Demographics (sex, age, descent) are shown for the selected region.
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <iframe src="la_crime_map.html" id="regionMapFrame" style="width:100%; height:420px; border:none; border-radius:8px;"></iframe>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <div id="demo_region_title" style="font-size:0.9em; color:#ccc;">Demographics – (all regions)</div>
+    <button class="btn" id="resetRegion" style="display:none;">View All Regions</button>
   </div>
   <div class="card"><div id="demo_sex" class="chart"></div></div>
   <div class="card"><div id="demo_age" class="chart"></div></div>
@@ -123,11 +129,6 @@
 <!-- REGION HOTSPOT × TIME FINGERPRINT -->
 <div class="section" id="region-section">
   <div class="section-title">📍 REGION HOTSPOT × TIME FINGERPRINT</div>
-
-<!-- 📌 EMBEDDED MAP FOR REGION SELECTION -->
-<div class="card" style="margin-bottom:16px;">
-  <iframe src="la_crime_map.html" id="regionMapFrame" style="width:100%; height:420px; border:none; border-radius:8px;"></iframe>
-</div>
   
   <div class="section-desc">
     When integrated with the map, clicking a hotspot or AREA will send the selected region here. Hourly, day-of-week,
@@ -150,7 +151,7 @@ function baseLayout(overrides) {
     plot_bgcolor: 'rgba(0,0,0,0)',
     font: { color: '#ffffff', family: 'Courier New, monospace' },
     xaxis: { gridcolor: '#333', zerolinecolor: '#555' },
-    yaxis: { gridcolor: '#333', zerolinecolor: '#555', rangemode: 'tozero' }, // FIX
+    yaxis: { gridcolor: '#333', zerolinecolor: '#555', rangemode: 'tozero' },
     margin: { l: 40, r: 20, t: 25, b: 35 },
     showlegend: true,
     legend: { orientation: 'h', x: 0, y: 1.1, font: { size: 9 } }
@@ -162,7 +163,7 @@ let filteredData = [];
 let topCrimeTypesCache = [];
 let selectedCrimeTypes = [];
 let viewMode = 'grid';
-let currentRegion = null;  // 来自地图的当前区域名
+let currentRegion = null;
 
 // ---------- helpers ----------
 function parseDateOcc(str) {
@@ -389,7 +390,7 @@ function drawCrimeTimeSection() {
       }], baseLayout({
         showlegend: false,
         xaxis: { title: 'Hour', gridcolor: '#333', zerolinecolor: '#555', dtick: 6 },
-        yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+        yaxis: { title: 'Incidents', rangemode: 'tozero' }
       }), { displayModeBar: false });
     });
 
@@ -413,66 +414,71 @@ function drawCrimeTimeSection() {
 
     Plotly.newPlot(overlayDiv, traces, baseLayout({
       xaxis: { title: 'Hour', gridcolor: '#333', zerolinecolor: '#555', dtick: 6 },
-      yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+      yaxis: { title: 'Incidents', rangemode: 'tozero' }
     }), { displayModeBar: false });
   }
 }
 
-// ---------- draw Demographic × Crime Type ----------
+// ---------- draw Demographic × Region ----------
 function drawDemographicSection() {
   const sexDiv = document.getElementById('demo_sex');
   const ageDiv = document.getElementById('demo_age');
   const descDiv = document.getElementById('demo_descent');
+  const titleEl = document.getElementById('demo_region_title');
+  const resetBtn = document.getElementById('resetRegion');
 
   if (!filteredData.length) {
+    titleEl.textContent = 'Demographics – (no data)';
+    resetBtn.style.display = 'none';
     Plotly.purge(sexDiv);
     Plotly.purge(ageDiv);
     Plotly.purge(descDiv);
     return;
   }
 
-  const crimes = getTopCrimeTypes(filteredData, 4);
+  const regionField = 'AREA NAME';
+  let regionData = filteredData;
 
-  const sexBuckets = ['M', 'F', 'O'];
-  const sexCounts = {
-    M: new Array(crimes.length).fill(0),
-    F: new Array(crimes.length).fill(0),
-    O: new Array(crimes.length).fill(0)
-  };
+  if (currentRegion) {
+    regionData = filteredData.filter(r => {
+      const areaName = (r[regionField] || '').toString().trim().toUpperCase();
+      const a = areaName;
+      const b = currentRegion.toUpperCase();
+      return a === b || a.includes(b) || b.includes(a);
+    });
+    if (!regionData.length) regionData = filteredData;
+  }
 
-  filteredData.forEach(r => {
-    const cdesc = (r['Crm Cd Desc'] || '').toUpperCase();
-    const idx = crimes.findIndex(c => c.toUpperCase() === cdesc);
-    if (idx === -1) return;
+  titleEl.textContent = currentRegion
+    ? `Demographics – ${currentRegion}`
+    : 'Demographics – (all regions)';
+  
+  resetBtn.style.display = currentRegion ? 'inline-block' : 'none';
+
+  // Sex distribution
+  const sexCounts = { M: 0, F: 0, O: 0 };
+  regionData.forEach(r => {
     const s = (r['Vict Sex'] || '').toUpperCase();
     const key = s === 'M' ? 'M' : s === 'F' ? 'F' : 'O';
-    sexCounts[key][idx]++;
+    sexCounts[key]++;
   });
 
-  const sexData = [
-    { x: crimes, y: sexCounts.M, name: 'Male', type: 'bar' },
-    { x: crimes, y: sexCounts.F, name: 'Female', type: 'bar' },
-    { x: crimes, y: sexCounts.O, name: 'Other/Unknown', type: 'bar' }
-  ];
+  const sexData = [{
+    x: ['Male', 'Female', 'Other/Unknown'],
+    y: [sexCounts.M, sexCounts.F, sexCounts.O],
+    type: 'bar',
+    marker: { color: ['#5599ff', '#ff55ff', '#999999'] }
+  }];
 
   Plotly.newPlot(sexDiv, sexData, baseLayout({
-    barmode: 'stack',
-    xaxis: { title: 'Crime Type', tickangle: -30 },
-    yaxis: { title: 'Victim Count', rangemode: 'tozero' } // FIX
+    xaxis: { title: 'Victim Sex' },
+    yaxis: { title: 'Count', rangemode: 'tozero' },
+    showlegend: false
   }), { displayModeBar: false });
 
-  const ageGroups = ['<18', '18-30', '31-50', '50+'];
-  const ageCounts = {
-    '<18': new Array(crimes.length).fill(0),
-    '18-30': new Array(crimes.length).fill(0),
-    '31-50': new Array(crimes.length).fill(0),
-    '50+': new Array(crimes.length).fill(0)
-  };
-
-  filteredData.forEach(r => {
-    const cdesc = (r['Crm Cd Desc'] || '').toUpperCase();
-    const idx = crimes.findIndex(c => c.toUpperCase() === cdesc);
-    if (idx === -1) return;
+  // Age distribution
+  const ageCounts = { '<18': 0, '18-30': 0, '31-50': 0, '50+': 0 };
+  regionData.forEach(r => {
     const age = Number(r['Vict Age']);
     if (!Number.isFinite(age) || age <= 0) return;
     let g = '18-30';
@@ -480,57 +486,43 @@ function drawDemographicSection() {
     else if (age <= 30) g = '18-30';
     else if (age <= 50) g = '31-50';
     else g = '50+';
-    ageCounts[g][idx]++;
+    ageCounts[g]++;
   });
 
-  const ageData = ageGroups.map(g => ({
-    x: crimes,
-    y: ageCounts[g],
-    name: g,
-    type: 'bar'
-  }));
+  const ageData = [{
+    x: ['<18', '18-30', '31-50', '50+'],
+    y: [ageCounts['<18'], ageCounts['18-30'], ageCounts['31-50'], ageCounts['50+']],
+    type: 'bar',
+    marker: { color: '#55ff55' }
+  }];
 
   Plotly.newPlot(ageDiv, ageData, baseLayout({
-    barmode: 'group',
-    xaxis: { title: 'Crime Type', tickangle: -30 },
-    yaxis: { title: 'Victim Count', rangemode: 'tozero' } // FIX
+    xaxis: { title: 'Victim Age Group' },
+    yaxis: { title: 'Count', rangemode: 'tozero' },
+    showlegend: false
   }), { displayModeBar: false });
 
+  // Descent distribution
   const descentTotals = {};
-  filteredData.forEach(r => {
+  regionData.forEach(r => {
     const d = (r['Vict Descent'] || 'UNK').toUpperCase();
     descentTotals[d] = (descentTotals[d] || 0) + 1;
   });
   const topDescents = Object.entries(descentTotals)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([d]) => d);
+    .slice(0, 6);
 
-  const descentCounts = {};
-  topDescents.forEach(d => {
-    descentCounts[d] = new Array(crimes.length).fill(0);
-  });
-
-  filteredData.forEach(r => {
-    const cdesc = (r['Crm Cd Desc'] || '').toUpperCase();
-    const idx = crimes.findIndex(c => c.toUpperCase() === cdesc);
-    if (idx === -1) return;
-    const d = (r['Vict Descent'] || 'UNK').toUpperCase();
-    if (!topDescents.includes(d)) return;
-    descentCounts[d][idx]++;
-  });
-
-  const descData = topDescents.map(d => ({
-    x: crimes,
-    y: descentCounts[d],
-    name: d,
-    type: 'bar'
-  }));
+  const descData = [{
+    x: topDescents.map(([d]) => d),
+    y: topDescents.map(([, count]) => count),
+    type: 'bar',
+    marker: { color: '#ffcc55' }
+  }];
 
   Plotly.newPlot(descDiv, descData, baseLayout({
-    barmode: 'stack',
-    xaxis: { title: 'Crime Type', tickangle: -30 },
-    yaxis: { title: 'Victim Count', rangemode: 'tozero' } // FIX
+    xaxis: { title: 'Victim Descent' },
+    yaxis: { title: 'Count', rangemode: 'tozero' },
+    showlegend: false
   }), { displayModeBar: false });
 }
 
@@ -594,7 +586,7 @@ function drawRegionSection() {
     marker: { color: '#ff5555', size: 5 }
   }], baseLayout({
     xaxis: { title: 'Hour', dtick: 6 },
-    yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+    yaxis: { title: 'Incidents', rangemode: 'tozero' }
   }), { displayModeBar: false });
 
   Plotly.newPlot(dowDiv, [{
@@ -605,7 +597,7 @@ function drawRegionSection() {
     marker: { color: '#ffffff' }
   }], baseLayout({
     xaxis: { title: 'Day of Week' },
-    yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+    yaxis: { title: 'Incidents', rangemode: 'tozero' }
   }), { displayModeBar: false });
 
   Plotly.newPlot(monthDiv, [{
@@ -617,17 +609,23 @@ function drawRegionSection() {
     marker: { color: '#ff5555', size: 5 }
   }], baseLayout({
     xaxis: { title: 'Month', tickangle: -45 },
-    yaxis: { title: 'Incidents', rangemode: 'tozero' } // FIX
+    yaxis: { title: 'Incidents', rangemode: 'tozero' }
   }), { displayModeBar: false });
 }
 
 // ---------- Events & init ----------
 document.getElementById('applyFilters').addEventListener('click', applyFilters);
+document.getElementById('resetRegion').addEventListener('click', () => {
+  currentRegion = null;
+  drawDemographicSection();
+  drawRegionSection();
+});
 setupViewModeToggle();
 
 window.addEventListener('message', (event) => {
   if (!event.data || event.data.type !== 'region-selected') return;
   currentRegion = event.data.regionName || event.data.areaName || null;
+  drawDemographicSection();
   drawRegionSection();
 });
 
