@@ -112,14 +112,20 @@
   <div class="section-title">👥 DEMOGRAPHIC × REGION</div>
   
   <div class="section-desc">
-    Click on the map below to select a region. Demographics (sex, age, descent) are shown for the selected region.
+    Select one or multiple regions below. Demographics (sex, age, descent) are shown for the selected region(s).
   </div>
-  <div class="card" style="margin-bottom:16px;">
-    <iframe src="la_crime_map.html" id="regionMapFrame" style="width:100%; height:420px; border:none; border-radius:8px;"></iframe>
+  <div class="card" style="margin-bottom:16px; padding:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <label style="font-size:1em; color:#fff; font-weight:bold;">SELECT REGIONS:</label>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" id="selectAllRegions">Select All</button>
+        <button class="btn" id="clearAllRegions">Clear All</button>
+      </div>
+    </div>
+    <div id="regionSelector" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px; max-height:300px; overflow-y:auto; padding:12px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid #333;"></div>
   </div>
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
     <div id="demo_region_title" style="font-size:0.9em; color:#ccc;">Demographics – (all regions)</div>
-    <button class="btn" id="resetRegion" style="display:none;">View All Regions</button>
   </div>
   <div class="card"><div id="demo_sex" class="chart"></div></div>
   <div class="card"><div id="demo_age" class="chart"></div></div>
@@ -164,6 +170,8 @@ let topCrimeTypesCache = [];
 let selectedCrimeTypes = [];
 let viewMode = 'grid';
 let currentRegion = null;
+let selectedRegions = [];
+let allRegions = [];
 
 // ---------- helpers ----------
 function parseDateOcc(str) {
@@ -283,6 +291,7 @@ function applyFilters() {
 
   topCrimeTypesCache = getTopCrimeTypes(filteredData, 6);
   buildCrimeTypeCheckboxes();
+  buildRegionSelector();
 
   drawCrimeTimeSection();
   drawDemographicSection();
@@ -333,6 +342,85 @@ function setupViewModeToggle() {
       viewMode = r.value;
       drawCrimeTimeSection();
     });
+  });
+}
+
+// ---------- build region selector ----------
+function buildRegionSelector() {
+  const container = document.getElementById('regionSelector');
+  container.innerHTML = '';
+  
+  if (!filteredData.length) return;
+
+  // Extract all unique regions
+  const regionCounts = {};
+  filteredData.forEach(r => {
+    const area = (r['AREA NAME'] || '').toString().trim();
+    if (area) {
+      regionCounts[area] = (regionCounts[area] || 0) + 1;
+    }
+  });
+
+  allRegions = Object.entries(regionCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name]) => name);
+
+  if (!allRegions.length) return;
+
+  allRegions.forEach(region => {
+    const label = document.createElement('label');
+    label.style.cssText = `
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid #444;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.85em;
+    `;
+    
+    label.addEventListener('mouseenter', () => {
+      label.style.background = 'rgba(255,255,255,0.15)';
+      label.style.borderColor = '#666';
+    });
+    
+    label.addEventListener('mouseleave', () => {
+      label.style.background = 'rgba(255,255,255,0.08)';
+      label.style.borderColor = '#444';
+    });
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = region;
+    checkbox.checked = selectedRegions.includes(region);
+    checkbox.style.cssText = `
+      margin-right: 8px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    `;
+    
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        if (!selectedRegions.includes(region)) {
+          selectedRegions.push(region);
+        }
+      } else {
+        selectedRegions = selectedRegions.filter(r => r !== region);
+      }
+      drawDemographicSection();
+      drawRegionSection();
+    });
+
+    const text = document.createElement('span');
+    text.textContent = region;
+    text.style.cssText = 'flex: 1; color: #fff;';
+
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    container.appendChild(label);
   });
 }
 
@@ -425,11 +513,9 @@ function drawDemographicSection() {
   const ageDiv = document.getElementById('demo_age');
   const descDiv = document.getElementById('demo_descent');
   const titleEl = document.getElementById('demo_region_title');
-  const resetBtn = document.getElementById('resetRegion');
 
   if (!filteredData.length) {
     titleEl.textContent = 'Demographics – (no data)';
-    resetBtn.style.display = 'none';
     Plotly.purge(sexDiv);
     Plotly.purge(ageDiv);
     Plotly.purge(descDiv);
@@ -439,21 +525,21 @@ function drawDemographicSection() {
   const regionField = 'AREA NAME';
   let regionData = filteredData;
 
-  if (currentRegion) {
+  if (selectedRegions.length > 0) {
     regionData = filteredData.filter(r => {
-      const areaName = (r[regionField] || '').toString().trim().toUpperCase();
-      const a = areaName;
-      const b = currentRegion.toUpperCase();
-      return a === b || a.includes(b) || b.includes(a);
+      const areaName = (r[regionField] || '').toString().trim();
+      return selectedRegions.includes(areaName);
     });
     if (!regionData.length) regionData = filteredData;
   }
 
-  titleEl.textContent = currentRegion
-    ? `Demographics – ${currentRegion}`
-    : 'Demographics – (all regions)';
-  
-  resetBtn.style.display = currentRegion ? 'inline-block' : 'none';
+  if (selectedRegions.length === 0) {
+    titleEl.textContent = 'Demographics – (all regions)';
+  } else if (selectedRegions.length === 1) {
+    titleEl.textContent = `Demographics – ${selectedRegions[0]}`;
+  } else {
+    titleEl.textContent = `Demographics – ${selectedRegions.length} regions selected`;
+  }
 
   // Sex distribution
   const sexCounts = { M: 0, F: 0, O: 0 };
@@ -544,19 +630,21 @@ function drawRegionSection() {
   const regionField = 'AREA NAME';
   let regionData = filteredData;
 
-  if (currentRegion) {
+  if (selectedRegions.length > 0) {
     regionData = filteredData.filter(r => {
-      const areaName = (r[regionField] || '').toString().trim().toUpperCase();
-      const a = areaName;
-      const b = currentRegion.toUpperCase();
-      return a === b || a.includes(b) || b.includes(a);
+      const areaName = (r[regionField] || '').toString().trim();
+      return selectedRegions.includes(areaName);
     });
     if (!regionData.length) regionData = filteredData;
   }
 
-  titleEl.textContent = currentRegion
-    ? `Temporal signature – ${currentRegion}`
-    : 'Temporal signature – (all regions)';
+  if (selectedRegions.length === 0) {
+    titleEl.textContent = 'Temporal signature – (all regions)';
+  } else if (selectedRegions.length === 1) {
+    titleEl.textContent = `Temporal signature – ${selectedRegions[0]}`;
+  } else {
+    titleEl.textContent = `Temporal signature – ${selectedRegions.length} regions selected`;
+  }
 
   const hoursArr = new Array(24).fill(0);
   const dowArr = new Array(7).fill(0);
@@ -615,18 +703,34 @@ function drawRegionSection() {
 
 // ---------- Events & init ----------
 document.getElementById('applyFilters').addEventListener('click', applyFilters);
-document.getElementById('resetRegion').addEventListener('click', () => {
-  currentRegion = null;
+
+document.getElementById('selectAllRegions').addEventListener('click', () => {
+  selectedRegions = [...allRegions];
+  buildRegionSelector();
   drawDemographicSection();
   drawRegionSection();
 });
+
+document.getElementById('clearAllRegions').addEventListener('click', () => {
+  selectedRegions = [];
+  buildRegionSelector();
+  drawDemographicSection();
+  drawRegionSection();
+});
+
 setupViewModeToggle();
 
 window.addEventListener('message', (event) => {
   if (!event.data || event.data.type !== 'region-selected') return;
-  currentRegion = event.data.regionName || event.data.areaName || null;
-  drawDemographicSection();
-  drawRegionSection();
+  const regionName = event.data.regionName || event.data.areaName;
+  if (regionName && allRegions.includes(regionName)) {
+    if (!selectedRegions.includes(regionName)) {
+      selectedRegions = [regionName];
+    }
+    buildRegionSelector();
+    drawDemographicSection();
+    drawRegionSection();
+  }
 });
 
 loadData();
